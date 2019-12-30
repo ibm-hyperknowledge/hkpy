@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 import requests
-from enum import Enum
+from enum import Enum, unique
 
-__all__ = ['DEBUG_MODE', 'SSL_VERIFY', 'LAMBDA', 'HKType', 'AnchorType']
+__all__ = ['DEBUG_MODE', 'SSL_VERIFY', 'LAMBDA', 'HKType', 'AnchorType', 'ContentType']
 
 DEBUG_MODE = False
 
@@ -35,6 +35,7 @@ AUTH_TOKEN = None
 
 LAMBDA = 'λ'
 
+@unique
 class HKType(Enum):
     CONNECTOR = 'connector'
     CONTEXT = 'context'
@@ -48,10 +49,27 @@ class HKType(Enum):
     def __eq__(self, other):
         return other == self.value
 
+@unique
 class AnchorType(Enum):
     SPATIAL = 'spatial'
     TEMPORAL = 'temporal'
     TEXT = 'text'
+
+    def __str__(self):
+        return self.value
+    
+    def __eq__(self, other):
+        return other == self.value
+
+@unique
+class ContentType(Enum):
+    JSON = 'application/json'
+    RDF = 'application/rdf+xml'
+    TRIG = 'application/trig'
+    NQUADS = 'application/n-quads'
+    NTRIPLES = 'application/n-triples'
+    TURTLE = 'text/turtle'
+    TEXT = 'text/plain'
 
     def __str__(self):
         return self.value

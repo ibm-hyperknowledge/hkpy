@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 from ..utils import generate_id
+from ..utils import constants
 from .hktransaction import *
 from .hkrepository import *
 from .hkbase import *
