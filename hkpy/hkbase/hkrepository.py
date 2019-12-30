@@ -54,6 +54,9 @@ class HKRepository(object):
         self.name = name
         self._headers = base._headers
 
+    def __repr__(self):
+        return f'{super().__repr__()}: {self.name}'
+
     def create_transaction(self, id_: Optional[str]=None) -> HKTransaction:
         """ Create a communication transaction with the repository.
         

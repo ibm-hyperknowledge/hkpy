@@ -54,7 +54,10 @@ class HKBase(object):
         self._observer_uri = f'{self._base_uri}/observer'
         self._headers = {'Content-Type' : 'application/json'}
         auth = auth if auth else constants.AUTH_TOKEN
-        self._headers['Authorization'] = f'Bearer {auth}'
+        self._headers['Authorization'] = f'{auth}'
+
+    def __repr__(self):
+        return f'{super().__repr__()}: {self.url}'
 
     def connect_repository(self, name: str) -> HKRepository:
         """ Connect to existing hkbase's repository.

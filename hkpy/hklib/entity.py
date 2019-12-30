@@ -51,6 +51,12 @@ class HKEntity(object):
         self.properties = {} if properties is None else properties
         self.metaproperties = {} if metaproperties is None else metaproperties
 
+    def __repr__(self):
+        return f'{super().__repr__()}: {self.id_}'
+    
+    def __str__(self):
+        return json.dumps(self.to_dict(), indent=2)
+
     def add_properties(self, **kwargs) -> None:
         """ Add properties in the HKEntity.
 
@@ -104,6 +110,3 @@ class HKEntity(object):
         jobj['metaProperties'] = jobj['metaProperties'] if 'metaProperties' in jobj else {}
 
         return jobj
-
-    def __str__(self):
-        return json.dumps(self.to_dict(), indent=2)

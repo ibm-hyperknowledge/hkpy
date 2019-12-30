@@ -36,7 +36,10 @@ class HKTransaction(object):
         raise(NotImplementedError)
         self.id_ = id_
         self.repository = repository
-
+    
+    def __repr__(self):
+        return f'{super().__repr__()}: {self.id_}'
+    
     def commit(self) -> None:
         url = f'{self.repository.base.repository_url}/{self.repository.name}/transaction/commit/{self.id_}'
         
