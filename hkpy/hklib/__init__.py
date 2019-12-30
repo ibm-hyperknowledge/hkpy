@@ -29,9 +29,6 @@ from .connector import HKConnector
 from .anchor import HKAnchor
 from .node import HKNode, HKContext, HKReferenceNode
 from .link import HKLink
-from .graph import HKGraph
-
-__all__ = ['hkfy']
 
 def hkfy(entity: Union[str, Dict]) -> HKEntity:
     """ Convert an entity in string or dict format to a HKEntity object.
@@ -80,3 +77,7 @@ def hkfy(entity: Union[str, Dict]) -> HKEntity:
     # TODO: add a hkpyerror exection
     raise(Exception)
 
+
+from .graph import HKGraph
+
+__all__ = ['hkfy']

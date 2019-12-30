@@ -50,7 +50,6 @@ class HKContext(HKEntity):
         super().__init__(type_=constants.HKType.CONTEXT, id_=id_, properties=properties, metaproperties=metaproperties)
         self.parent = parent.id_ if isinstance(parent, HKEntity) else parent
 
-
 class HKNode(HKEntity):
     """
     """
