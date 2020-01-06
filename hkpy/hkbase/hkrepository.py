@@ -1,24 +1,7 @@
-# MIT License
-
-# Copyright (c) 2019 IBM Hyperlinked Knowledge Graph
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
 
 from typing import TypeVar, List, Dict, Union, Optional
 
@@ -26,9 +9,10 @@ import requests
 import json
 import copy
 from abc import abstractmethod
+from io import TextIOWrapper
 
-from . import HKTransaction, generate_id
-from ..hklib import hkfy, HKEntity
+from . import HKTransaction, generate_id, constants
+from ..hklib import hkfy, HKEntity, HKContext
 from ..oops import HKBError, HKpyError
 from ..utils import response_validator
 
@@ -52,6 +36,9 @@ class HKRepository(object):
         self.base = base
         self.name = name
         self._headers = base._headers
+
+    def __repr__(self):
+        return f'{super().__repr__()}: {self.name}'
 
     def create_transaction(self, id_: Optional[str]=None) -> HKTransaction:
         """ Create a communication transaction with the repository.
@@ -113,7 +100,7 @@ class HKRepository(object):
 
         try:
             if isinstance(filter_, str):
-                tmp_headers = self._headers
+                tmp_headers = copy.copy(self._headers)
                 tmp_headers['Content-Type'] = 'text/plain'
                 response = requests.post(url=url, data=filter_, headers=tmp_headers, params={})
             elif isinstance(filter_, dict):
@@ -158,6 +145,40 @@ class HKRepository(object):
         """
         
         self.add_entities(entities, transaction)
+
+    def import_data(self, fd: Union[str, TextIOWrapper], datatype: constants.ContentType, **options) -> None:
+        """ Import data to the hkbase.
+
+        Parameters
+        ----------
+        fd : (Union[str, TextIOWrapper]) file or data to be imported
+        datatype : (constants.ContentType) data's type
+        **options : additional options to hkbase
+        """
+
+        if isinstance(fd, TextIOWrapper):
+            fd = fd.read()
+        elif isinstance(fd, str):
+            pass
+        else:
+            raise HKpyError(message='Data formaat not supported.')
+
+        url = f'{self.base._repository_uri}/{self.name}/rdf'
+
+        tmp_headers = copy.copy(self._headers)
+        tmp_headers.update({
+            'Content-Type': datatype,
+            'Content-Length': str(len(fd.encode('utf-8')))
+        })
+
+        if 'context' in options:
+            if isinstance(options['context'], HKContext):
+                options['context'] = options['context'].id_
+
+            tmp_headers['context-parent'] = options['context']
+
+        response = requests.put(url=url, data=fd, params=options, headers=tmp_headers)
+        response_validator(response)
 
     def clear(self) -> None:
         """ Delete all entities in the repository.
