@@ -74,7 +74,8 @@ class HKRepository(object):
         if isinstance(entities[0], HKEntity):
             entities = [x.to_dict() for x in entities]
         elif isinstance(entities[0], dict):
-            entities = list(map(hkfy, entities))
+            pass
+            # entities = list(map(hkfy, entities))
         else:
             raise ValueError
 
