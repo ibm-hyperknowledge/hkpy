@@ -3,7 +3,7 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 
 from . import HKEntity
 from . import constants
@@ -32,14 +32,21 @@ class HKConnector(HKEntity):
         self.class_name = class_name
         self.roles = {} if roles is None else roles
 
-    def add_roles(self, roles: Dict) -> None:
+    def add_roles(self, **roles) -> None:
         """ Add roles to the connector.
 
         Parameters
         ----------
-        roles : (Dict) dictionary of roles and roles' abbreviations
+        **roles: keys and values, which the keys are the roles' names and the values are the roles' types
         """
         
+        if 'roles' in roles:
+            self._add_roles(roles['roles'])
+        else:
+            for name, type_ in roles.items():
+                self.roles[name] = type_
+
+    def _add_roles(self, roles: Dict) -> None:
         if not isinstance(roles, (tuple, list)):
             roles = [roles]
         

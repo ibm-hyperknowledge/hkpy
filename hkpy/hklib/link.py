@@ -3,12 +3,17 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 
-from typing import Union, Optional, Dict, List
+from typing import Union, Optional, Dict, List, TypeVar
 
 from . import constants
-from . import HKEntity, HKConnector, HKNode, HKContext, HKReferenceNode
+from . import HKEntity
+from . import HKAnchor
+from . import HKConnector
 
 __all__ = ['HKLink']
+
+HKAnyNode = TypeVar('HKAnyNode')
+HKContext = TypeVar('HKContext')
 
 class HKLink(HKEntity):
     """
@@ -38,16 +43,20 @@ class HKLink(HKEntity):
         self.binds = {} if binds is None else binds
         self.parent = parent.id_ if isinstance(parent, HKEntity) else parent
     
-    def add_bind(self, role: str, entity: Union[str, HKNode, HKContext, HKReferenceNode]) -> None:
+    def add_bind(self, role: str, entity: Union[str, HKAnyNode], anchor: Optional[Union[str, HKAnchor]]=None) -> None:
         """ Add a bind to the link.
 
         Parameters
         ----------
         role : (str) the entity's role in the link
-        entity: (Union[str, HKNode, HKContext, HKReferenceNode]) the entity related in the link
+        entity: (Union[str, HKAnyNode]) the entity related in the link
+        anchor: (Optional[Union[str, HKAnchor]]) the entity's anchor associated in the bind
         """
 
-        bind = {entity[0] : [entity[1]]} if(type(entity) is tuple) else {entity : [constants.LAMBDA]}
+        entity = entity.id_ if isinstance(entity, HKEntity) else entity
+        anchor = anchor.key if anchor is not None and isinstance(anchor, HKAnchor) else anchor
+        
+        bind = {entity: [anchor]} if anchor is not None else {entity: [constants.LAMBDA]}
         if role in self.binds:
             self.binds[role].update(bind)
         else:

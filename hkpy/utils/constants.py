@@ -32,6 +32,7 @@ class HKType(BaseEnum):
     NODE = 'node'
     LINK = 'link'
     REFERENCENODE = 'ref'
+    TRAIL = 'trail'
 
 @unique
 class ConnectorType(BaseEnum):
