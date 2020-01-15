@@ -41,14 +41,13 @@ class HKConnector(HKEntity):
         """
         
         if 'roles' in roles:
-            self._add_roles(roles['roles'])
+            roles = roles['roles']
+            
+            if not isinstance(roles, (tuple, list)):
+                roles = [roles]
+            for r in roles:
+                self.roles.update(r)
+
         else:
             for name, type_ in roles.items():
                 self.roles[name] = type_
-
-    def _add_roles(self, roles: Dict) -> None:
-        if not isinstance(roles, (tuple, list)):
-            roles = [roles]
-        
-        for r in roles:
-            self.roles.update(r)
