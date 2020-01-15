@@ -11,7 +11,33 @@ from . import HKAnchor
 
 __all__ = ['HKContext', 'HKNode', 'HKReferenceNode']
 
-class HKContext(HKEntity):
+class _HKNodeEntity(HKEntity):
+    def __init__(self, type_, id_, parent, properties, metaproperties):
+        super().__init__(type_, id_, properties=properties, metaproperties=metaproperties)
+        self.parent = parent.id_ if isinstance(parent, HKContext) else parent
+        self.interfaces = {}
+
+    def add_anchors(self, anchors: Union[HKAnchor, List[HKAnchor]]) -> None:
+        """ Add anchors to the node.
+
+        Parameters
+        ----------
+        anchors: (Union[HKAnchor, List[HKAnchor]]) the anchor or list of anchors
+        """
+
+        if not isinstance(anchors, (tuple, list)):
+            anchors = [anchors]
+
+        for a in anchors:
+            interface = {
+                "type" : a.type_
+            }
+            if(a.properties):
+                interface['properties'] = a.properties
+            
+            self.interfaces[a.id_] = interface
+
+class HKContext(_HKNodeEntity):
     """
     """
 
@@ -30,10 +56,9 @@ class HKContext(HKEntity):
         metaproperties: (Optional[Dict]) the type of any property
         """
 
-        super().__init__(type_=constants.HKType.CONTEXT, id_=id_, properties=properties, metaproperties=metaproperties)
-        self.parent = parent.id_ if isinstance(parent, HKEntity) else parent
+        super().__init__(type_=constants.HKType.CONTEXT, id_=id_, parent=parent, properties=properties, metaproperties=metaproperties)
 
-class HKNode(HKEntity):
+class HKNode(_HKNodeEntity):
     """
     """
 
@@ -52,27 +77,10 @@ class HKNode(HKEntity):
         metaproperties: (Optional[Dict]) the type of any property
         """
 
-        super().__init__(type_=constants.HKType.NODE, id_=id_, properties=properties, metaproperties=metaproperties)
-        self.parent = parent.id_ if isinstance(parent, HKContext) else parent
-        self.interfaces = {}
-    
-    def add_anchors(self, anchors: Union[HKAnchor, List[HKAnchor]]) -> None:
-        """
-        """
-
-        if not isinstance(anchors, (tuple, list)):
-            anchors = [anchors]
-
-        for a in anchors:
-            interface = {
-                "type" : a.type_
-            }
-            if(a.properties):
-                interface['properties'] = a.properties
-            
-            self.interfaces[a.id_] = interface
+        super().__init__(type_=constants.HKType.NODE, id_=id_, parent=parent, properties=properties, metaproperties=metaproperties)
+        
           
-class HKReferenceNode(HKEntity):
+class HKReferenceNode(_HKNodeEntity):
     """
     """
 
@@ -93,6 +101,5 @@ class HKReferenceNode(HKEntity):
         metaproperties: (Optional[Dict]) the type of any property
         """
 
-        super().__init__(type_=constants.HKType.REFERENCENODE, id_=id_, properties=properties, metaproperties=metaproperties)
+        super().__init__(type_=constants.HKType.REFERENCENODE, id_=id_, parent=parent, properties=properties, metaproperties=metaproperties)
         self.ref = ref.id_ if isinstance(ref, HKEntity) else ref
-        self.parent = parent.id_ if isinstance(parent, HKContext) else parent
