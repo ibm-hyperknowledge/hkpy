@@ -6,7 +6,7 @@
 import requests
 from enum import Enum, unique
 
-__all__ = ['DEBUG_MODE', 'SSL_VERIFY', 'LAMBDA', 'HKType', 'AnchorType', 'ContentType']
+__all__ = ['DEBUG_MODE', 'SSL_VERIFY', 'LAMBDA', 'HKType', 'AnchorType', 'ConnectorType', 'ContentType']
 
 DEBUG_MODE = False
 
@@ -32,6 +32,19 @@ class HKType(Enum):
     def __eq__(self, other):
         return other == self.value
 
+@unique
+class ConnectorType(Enum):
+    HIERARCHY = "h"
+    FACTS = "f"
+    REASONING = "r"
+    CONSTRAINT = "c"
+    CAUSAL = "C"
+
+    def __str__(self):
+        return self.value
+    
+    def __eq__(self, other):
+        return other == self.value
 @unique
 class AnchorType(Enum):
     SPATIAL = 'spatial'
