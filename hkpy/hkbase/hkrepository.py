@@ -74,14 +74,15 @@ class HKRepository(object):
         if isinstance(entities[0], HKEntity):
             entities = [x.to_dict() for x in entities]
         elif isinstance(entities[0], dict):
-            entities = list(map(hkfy, entities))
+            pass
+            # entities = list(map(hkfy, entities))
         else:
             raise ValueError
 
         headers = copy.deepcopy(self._headers)
-        headers["Content-Type"] = "application/json"
+        headers['Content-Type'] = 'application/json'
 
-        response = requests.put(url=url, data=json.dumps(entities), headers=headers, verify=False)
+        response = requests.put(url=url, data=json.dumps(entities), headers=headers)
         response_validator(response=response)
 
     def get_entities(self, filter_: Union[str, Dict]) -> List[HKEntity]:
@@ -100,7 +101,7 @@ class HKRepository(object):
 
         try:
             if isinstance(filter_, str):
-                tmp_headers = copy.copy(self._headers)
+                tmp_headers = copy.deepcopy(self._headers)
                 tmp_headers['Content-Type'] = 'text/plain'
                 response = requests.post(url=url, data=filter_, headers=tmp_headers, params={})
             elif isinstance(filter_, dict):
@@ -112,7 +113,7 @@ class HKRepository(object):
         except (HKBError, HKpyError) as err:
             raise err
         except Exception as err:
-            raise HKpyError(message='Could not retrieve the entities.', error=err)
+            raise HKBError(message='Could not retrieve the entities.', error=err)
         
         return [hkfy(entity) for entity in data.values()]
 
@@ -162,23 +163,27 @@ class HKRepository(object):
             pass
         else:
             raise HKpyError(message='Data formaat not supported.')
+        
+        if 'as_hk' in options and options['as_hk'] == True:
+            self.add_entities(entities=json.loads(fd))
+        
+        else:
+            url = f'{self.base._repository_uri}/{self.name}/rdf'
 
-        url = f'{self.base._repository_uri}/{self.name}/rdf'
+            tmp_headers = copy.copy(self._headers)
+            tmp_headers.update({
+                'Content-Type': datatype,
+                'Content-Length': str(len(fd.encode('utf-8')))
+            })
 
-        tmp_headers = copy.copy(self._headers)
-        tmp_headers.update({
-            'Content-Type': datatype,
-            'Content-Length': str(len(fd.encode('utf-8')))
-        })
+            if 'context' in options:
+                if isinstance(options['context'], HKContext):
+                    options['context'] = options['context'].id_
 
-        if 'context' in options:
-            if isinstance(options['context'], HKContext):
-                options['context'] = options['context'].id_
+                tmp_headers['context-parent'] = options['context']
 
-            tmp_headers['context-parent'] = options['context']
-
-        response = requests.put(url=url, data=fd, params=options, headers=tmp_headers)
-        response_validator(response)
+            response = requests.put(url=url, data=fd, params=options, headers=tmp_headers)
+            response_validator(response)
 
     def clear(self) -> None:
         """ Delete all entities in the repository.
@@ -186,3 +191,15 @@ class HKRepository(object):
         
         entities = self.get_entities(filter_={})
         self.delete_entities(ids=entities, transaction=None)
+
+    def hyql(self, query: str) -> List[HKEntity]:
+        
+        url = f'{self.base._repository_uri}/{self.name}/query/'
+        
+        headers = copy.deepcopy(self._headers)
+        headers['Content-Type'] = 'text/plain'
+
+        response = requests.post(url=url, data=query, headers=headers)
+        _, data = response_validator(response=response)
+
+        return [hkfy(entity) for entity in data]

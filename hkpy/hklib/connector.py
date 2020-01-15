@@ -13,7 +13,7 @@ __all__ = ['HKConnector']
 class HKConnector(HKEntity):
     def __init__(self,
                  id_: str,
-                 class_name: str,
+                 class_name: constants.ConnectorType,
                  roles: Optional[Dict]=None,
                  properties: Optional[Dict]=None,
                  metaproperties: Optional[Dict]=None):
