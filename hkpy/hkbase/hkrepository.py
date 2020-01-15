@@ -193,7 +193,13 @@ class HKRepository(object):
         self.delete_entities(ids=entities, transaction=None)
 
     def hyql(self, query: str) -> List[HKEntity]:
-        
+        """ Performs a HyQL query on the repository and retrive its results.
+
+        Parameters
+        ----------
+        query : (str) the HyQL query
+        """
+
         url = f'{self.base._repository_uri}/{self.name}/query/'
         
         headers = copy.deepcopy(self._headers)
