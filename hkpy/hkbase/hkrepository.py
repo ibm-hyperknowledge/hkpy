@@ -163,23 +163,27 @@ class HKRepository(object):
             pass
         else:
             raise HKpyError(message='Data formaat not supported.')
+        
+        if 'as_hk' in options and options['as_hk'] == True:
+            self.add_entities(entities=json.loads(fd))
+        
+        else:
+            url = f'{self.base._repository_uri}/{self.name}/rdf'
 
-        url = f'{self.base._repository_uri}/{self.name}/rdf'
+            tmp_headers = copy.copy(self._headers)
+            tmp_headers.update({
+                'Content-Type': datatype,
+                'Content-Length': str(len(fd.encode('utf-8')))
+            })
 
-        tmp_headers = copy.copy(self._headers)
-        tmp_headers.update({
-            'Content-Type': datatype,
-            'Content-Length': str(len(fd.encode('utf-8')))
-        })
+            if 'context' in options:
+                if isinstance(options['context'], HKContext):
+                    options['context'] = options['context'].id_
 
-        if 'context' in options:
-            if isinstance(options['context'], HKContext):
-                options['context'] = options['context'].id_
+                tmp_headers['context-parent'] = options['context']
 
-            tmp_headers['context-parent'] = options['context']
-
-        response = requests.put(url=url, data=fd, params=options, headers=tmp_headers)
-        response_validator(response)
+            response = requests.put(url=url, data=fd, params=options, headers=tmp_headers)
+            response_validator(response)
 
     def clear(self) -> None:
         """ Delete all entities in the repository.
