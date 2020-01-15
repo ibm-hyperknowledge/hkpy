@@ -80,9 +80,9 @@ class HKRepository(object):
             raise ValueError
 
         headers = copy.deepcopy(self._headers)
-        headers["Content-Type"] = "application/json"
+        headers['Content-Type'] = 'application/json'
 
-        response = requests.put(url=url, data=json.dumps(entities), headers=headers, verify=False)
+        response = requests.put(url=url, data=json.dumps(entities), headers=headers)
         response_validator(response=response)
 
     def get_entities(self, filter_: Union[str, Dict]) -> List[HKEntity]:
@@ -101,7 +101,7 @@ class HKRepository(object):
 
         try:
             if isinstance(filter_, str):
-                tmp_headers = copy.copy(self._headers)
+                tmp_headers = copy.deepcopy(self._headers)
                 tmp_headers['Content-Type'] = 'text/plain'
                 response = requests.post(url=url, data=filter_, headers=tmp_headers, params={})
             elif isinstance(filter_, dict):
@@ -113,7 +113,7 @@ class HKRepository(object):
         except (HKBError, HKpyError) as err:
             raise err
         except Exception as err:
-            raise HKpyError(message='Could not retrieve the entities.', error=err)
+            raise HKBError(message='Could not retrieve the entities.', error=err)
         
         return [hkfy(entity) for entity in data.values()]
 
@@ -191,3 +191,15 @@ class HKRepository(object):
         
         entities = self.get_entities(filter_={})
         self.delete_entities(ids=entities, transaction=None)
+
+    def hyql(self, query: str) -> List[HKEntity]:
+        
+        url = f'{self.base._repository_uri}/{self.name}/query/'
+        
+        headers = copy.deepcopy(self._headers)
+        headers['Content-Type'] = 'text/plain'
+
+        response = requests.post(url=url, data=query, headers=headers)
+        _, data = response_validator(response=response)
+
+        return [hkfy(entity) for entity in data]
