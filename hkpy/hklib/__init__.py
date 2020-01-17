@@ -7,11 +7,11 @@ from typing import Union, Dict
 
 from ..utils import constants, generate_id
 
+from .anchor import HKAnchor
 from .entity import HKEntity
 from .connector import HKConnector
-from .anchor import HKAnchor
-from .node import HKNode, HKContext, HKReferenceNode
 from .link import HKLink
+from .node import HKNode, HKContext, HKReferenceNode, HKTrail
 
 def hkfy(entity: Union[str, Dict]) -> HKEntity:
     """ Convert an entity in string or dict format to a HKEntity object.

@@ -13,7 +13,7 @@ __all__ = ['response_validator', 'generate_id']
 def generate_id(entity):
     return str(hex(int(time.time() * id(entity))))
 
-def response_validator(response, whitelist=None):
+def response_validator(response, whitelist=None, content='json'):
     """
     """
     
@@ -22,11 +22,18 @@ def response_validator(response, whitelist=None):
     try:
         if DEBUG_MODE:
             log_curl_command(response)
-        res_content = response.json()
+        if content == 'json':
+            res_content = response.json()
+        elif content == 'text':
+            res_content = response.text
+        elif content == 'raw':
+            res_content = response.raw
+        else:
+            res_content = response.content
     except:
         res_content = None
 
-    if(res_code in whitelist if whitelist else 200 <= res_code < 300):
+    if res_code in whitelist if whitelist else 200 <= res_code < 300:
         return res_code, res_content
     else:
         raise HKBError(code=res_code, message=res_content, url=res_url)

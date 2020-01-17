@@ -6,7 +6,7 @@
 import requests
 from enum import Enum, unique
 
-__all__ = ['DEBUG_MODE', 'SSL_VERIFY', 'LAMBDA', 'HKType', 'AnchorType', 'ConnectorType', 'ContentType']
+__all__ = ['DEBUG_MODE', 'SSL_VERIFY', 'LAMBDA', 'HKType', 'ConnectorType', 'RoleType', 'AnchorType', 'ContentType']
 
 DEBUG_MODE = False
 
@@ -18,47 +18,46 @@ AUTH_TOKEN = None
 
 LAMBDA = 'λ'
 
+class BaseEnum(Enum):
+    def __str__(self):
+        return self.value
+    
+    def __eq__(self, other):
+        return other == self.value
+
 @unique
-class HKType(Enum):
+class HKType(BaseEnum):
     CONNECTOR = 'connector'
     CONTEXT = 'context'
     NODE = 'node'
     LINK = 'link'
     REFERENCENODE = 'ref'
-
-    def __str__(self):
-        return self.value
-    
-    def __eq__(self, other):
-        return other == self.value
+    TRAIL = 'trail'
 
 @unique
-class ConnectorType(Enum):
-    HIERARCHY = "h"
-    FACTS = "f"
-    REASONING = "r"
-    CONSTRAINT = "c"
-    CAUSAL = "C"
+class ConnectorType(BaseEnum):
+    HIERARCHY = 'h'
+    FACTS = 'f'
+    REASONING = 'r'
+    CONSTRAINT = 'c'
+    CAUSAL = 'C'
 
-    def __str__(self):
-        return self.value
-    
-    def __eq__(self, other):
-        return other == self.value
 @unique
-class AnchorType(Enum):
+class RoleType(BaseEnum):
+    NONE = 'n'
+    SUBJECT = 's'
+    OBJECT = 'o'
+    PARENT = 'p'
+    CHILD = 'c'
+
+@unique
+class AnchorType(BaseEnum):
     SPATIAL = 'spatial'
     TEMPORAL = 'temporal'
     TEXT = 'text'
 
-    def __str__(self):
-        return self.value
-    
-    def __eq__(self, other):
-        return other == self.value
-
 @unique
-class ContentType(Enum):
+class ContentType(BaseEnum):
     JSON = 'application/json'
     RDF = 'application/rdf+xml'
     TRIG = 'application/trig'
@@ -66,9 +65,3 @@ class ContentType(Enum):
     NTRIPLES = 'application/n-triples'
     TURTLE = 'text/turtle'
     TEXT = 'text/plain'
-
-    def __str__(self):
-        return self.value
-    
-    def __eq__(self, other):
-        return other == self.value

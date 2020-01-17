@@ -76,15 +76,15 @@ class HKEntity(object):
 
         jobj = {}
         for k, v in self.__dict__.items():
-            if (not v and k not in ['parent', 'children']):
+            if not v and k not in ['parent', 'children']:
                 continue
-            if (k == 'id_'):
+            if k in 'id_':
                 jobj['id'] = v
-            elif (k == 'type_'):
+            elif k == 'type_':
                 jobj['type'] = v.value
-            elif (k == 'class_name'):
+            elif k == 'class_name':
                 jobj['className'] = v
-            elif (k == 'metaproperties'):
+            elif k == 'metaproperties':
                 jobj['metaProperties'] = v
             else:
                 jobj[k] = v

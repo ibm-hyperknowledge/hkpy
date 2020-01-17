@@ -3,13 +3,13 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 
-from typing import TypeVar, List, Dict, Union, Optional
+from typing import TypeVar, List, Dict, Union, Optional, Any
 
-import requests
-import json
+import os
 import copy
-from abc import abstractmethod
-from io import TextIOWrapper
+import json
+import requests
+from io import TextIOWrapper, BufferedReader
 
 from . import HKTransaction, generate_id, constants
 from ..hklib import hkfy, HKEntity, HKContext
@@ -193,7 +193,13 @@ class HKRepository(object):
         self.delete_entities(ids=entities, transaction=None)
 
     def hyql(self, query: str) -> List[HKEntity]:
-        
+        """ Performs a HyQL query on the repository and retrive its results.
+
+        Parameters
+        ----------
+        query : (str) the HyQL query
+        """
+
         url = f'{self.base._repository_uri}/{self.name}/query/'
         
         headers = copy.deepcopy(self._headers)
@@ -203,3 +209,56 @@ class HKRepository(object):
         _, data = response_validator(response=response)
 
         return [hkfy(entity) for entity in data]
+
+    def list_objects(self) -> List[str]:
+        """
+        """
+        
+        url = f'{self.base._repository_uri}/{self.name}/storage'
+
+        response = requests.get(url=url, headers=self._headers)
+        _, data = response_validator(response=response)
+
+        return data
+
+    def add_object(self, object_: [str, TextIOWrapper, BufferedReader], mimetype: str) -> str:
+        """
+        """
+
+        url = f'{self.base._repository_uri}/{self.name}/storage/object'
+        
+        if isinstance(object_, (TextIOWrapper, BufferedReader)):
+            object_ = object_.read()
+        elif isinstance(object_, str) and os.path.isfile(object_):
+            with open(object_ ,'rb') as f:
+                object_ = f.read()
+        else:
+            raise HKpyError(message='Object not valid.')
+        
+        headers = copy.deepcopy(self._headers)
+        headers['Content-Type'] = mimetype
+        
+        response = requests.put(url=url, data=object_, headers=headers)
+        _, data = response_validator(response=response)
+
+        return data['objectId'] if 'objectId' in data else data
+
+    def delete_object(self, id_: str) -> None:
+        """
+        """
+        
+        url = f'{self.base._repository_uri}/{self.name}/storage/object/{id_}'
+
+        response = requests.delete(url=url, headers=self._headers)
+        response_validator(response=response)
+
+    def get_object(self, id_: str) -> bytes:
+        """
+        """
+
+        url = f'{self.base._repository_uri}/{self.name}/storage/object/{id_}'
+
+        response = requests.get(url=url, headers=self._headers)
+        _, data = response_validator(response=response, content='.')
+
+        return data
