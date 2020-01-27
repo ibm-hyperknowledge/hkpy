@@ -16,13 +16,13 @@ from .node import HKNode, HKContext, HKReferenceNode, HKTrail
 def hkfy(entity: Union[str, Dict]) -> HKEntity:
     """ Convert an entity in string or dict format to a HKEntity object.
 
-        Parameters
-        ----------
-        entity : (Union[str, Dict]) an entity in string or dict format
+    Parameters
+    ----------
+    entity : (Union[str, Dict]) an entity in string or dict format
 
-        Returns
-        -------
-        (HKEntity) The entity's correspondent HKEntity object
+    Returns
+    -------
+    (HKEntity) The entity's correspondent HKEntity object
     """
 
     # TODO: check_consistency
@@ -47,9 +47,12 @@ def hkfy(entity: Union[str, Dict]) -> HKEntity:
             if 'interfaces' in entity:
                 hke.interfaces = entity['interfaces']
 
-        elif entity['type'] == 'link':
+        elif entity['type'] == constants.HKType.LINK:
             hke = HKLink(connector=entity['connector'], id_=entity['id'], binds=entity['binds'], parent=entity['parent'])
 
+        elif entity['type'] == constants.HKType.ANCHOR:
+            raise NotImplementedError
+        
         if 'properties' in entity:
             hke.add_properties(properties=entity['properties'])
         if 'metaproperties' in entity:

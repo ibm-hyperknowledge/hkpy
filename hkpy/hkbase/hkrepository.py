@@ -198,6 +198,10 @@ class HKRepository(object):
         Parameters
         ----------
         query : (str) the HyQL query
+        
+        Returns
+        -------
+        (List[HKEntity]) list of retrieved entities
         """
 
         url = f'{self.base._repository_uri}/{self.name}/query/'
