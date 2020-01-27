@@ -187,16 +187,22 @@ class HKGraph(object):
             else:
                 raise HKpyError(message='Entity of unkwown type.')
 
-    def to_graph(self, data: Dict) -> None:
-        """ Convert a Hyperknowledge dictonary to a HKGraph instance.
+    def to_graph(self, data: Union[Dict, List[HKEntity]]) -> None:
+        """ Convert a set of entities to a HKGraph instance.
 
         Parameters
         ----------
-        data : (Dict) the Hyperknowledge dictonary
+        data : (Union[Dict, List[HKEntity]]) a  dictonary of entities or list of entities
         """
 
-        for id_ in data.keys():
-            self.add_entities(data[id_])
-
+        if isinstance(data, dict):
+            for id_ in data.keys():
+                self.add_entities(data[id_])
+        elif isinstance(data, list):
+            for entity in data:
+                self.add_entities(entity)
+        else:
+            raise HKpyError(message='Invalid input format.')
+        
     def __str__(self):
         return str(self.__dict__)
