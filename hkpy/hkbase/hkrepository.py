@@ -106,6 +106,21 @@ class HKRepository(object):
                 response = requests.post(url=url, data=filter_, headers=tmp_headers, params={})
             elif isinstance(filter_, dict):
                 response = requests.post(url=url, data=json.dumps(filter_), headers=self._headers)
+            elif isinstance(filter_, list): 
+                def check_list(the_filter, depth=0):
+                    max_depth = 2
+                    if depth <= max_depth: 
+                        if isinstance(the_filter, str): 
+                            return True
+                        elif isinstance(the_filter, dict): 
+                            return True
+                        elif isinstance(the_filter, list):
+                            if all([check_list(i, depth+1) for i in the_filter]):
+                                return True
+                    raise HKpyError(message='Invalid filter type.')
+                
+                check_list(filter_)
+                response = requests.post(url=url, data=json.dumps(filter_), headers=self._headers)
             else:
                 raise HKpyError(message='Invalid filter type.')
                 
