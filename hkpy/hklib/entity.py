@@ -3,12 +3,15 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 
-from typing import Optional, Union, List, Dict
+from typing import Optional, Union, List, Dict, TypeVar
 
 import json
+
 from . import constants
 
-__all__ = ['HKEntity']
+__all__ = ['HKEntity','HKParentedEntity']
+
+HKContext = TypeVar('HKContext')
 
 class HKEntity(object):
     """
@@ -38,7 +41,8 @@ class HKEntity(object):
         return f'{super().__repr__()}: {self.id_}'
     
     def __str__(self):
-        return json.dumps(self.to_dict(), indent=2)
+        buffer = {}
+        return json.dumps(self.to_dict(buffer), indent=2)
 
     def add_properties(self, **kwargs) -> None:
         """ Add properties in the HKEntity.
@@ -66,8 +70,8 @@ class HKEntity(object):
         else:
             self.metaproperties.update(kwargs)
 
-    def to_dict(self) -> Dict:
-        """ Convert a HKEntity to a dict.
+    def to_dict(self, buffer) -> Dict:
+        """ Convert a HKEntity to a dict and adds itself to buffer. Also adds converted nested objects to buffer.
 
         Returns
         -------
@@ -76,8 +80,6 @@ class HKEntity(object):
 
         jobj = {}
         for k, v in self.__dict__.items():
-            if not v and k not in ['parent', 'children']:
-                continue
             if k in 'id_':
                 jobj['id'] = v
             elif k == 'type_':
@@ -86,10 +88,41 @@ class HKEntity(object):
                 jobj['className'] = v
             elif k == 'metaproperties':
                 jobj['metaProperties'] = v
-            else:
-                jobj[k] = v
 
         jobj['properties'] = jobj['properties'] if 'properties' in jobj else {}
         jobj['metaProperties'] = jobj['metaProperties'] if 'metaProperties' in jobj else {}
 
+        buffer[self.id_] = jobj
+
         return jobj
+
+class HKParentedEntity(HKEntity):
+
+    def __init__(self,
+                 type_: Union[constants.HKType, constants.AnchorType],
+                 id_: str,
+                 parent: Optional[Union[str, HKContext]]=None,
+                 properties: Optional[Dict] = {},
+                 metaproperties: Optional[Dict] = {}):
+        from hkpy.hklib import HKContext
+
+        super().__init__(type_, id_, properties=properties, metaproperties=metaproperties)
+        self.parent = parent.id_ if isinstance(parent, HKContext) else parent
+
+    def to_dict(self, buffer) -> Dict:
+        from hkpy.hklib import HKContext
+
+        jobj = super().to_dict(buffer)
+
+        if self.parent and isinstance(self.parent, str):
+            jobj['parent'] = self.parent
+        elif self.parent and isinstance(self.parent, HKContext):
+            jobj['parent'] = self.parent.to_dict(buffer)
+        else:
+            jobj['parent'] = None
+
+        buffer[self.id_] = jobj
+
+        return jobj
+
+

@@ -51,3 +51,20 @@ class HKConnector(HKEntity):
         else:
             for name, type_ in roles.items():
                 self.roles[name] = type_
+
+    def to_dict(self, buffer) -> Dict:
+        """ Convert a HKConnector to a dict and adds itself to buffer.
+
+        Returns
+        -------
+        (Dict) The HKConnector's correspondent dict
+        """
+
+        jobj = super().to_dict(buffer)
+
+        jobj['className'] = str(self.class_name)
+        jobj['roles'] = jobj['roles'] if 'roles' in jobj else {}
+
+        buffer[self.id_] = jobj
+
+        return jobj

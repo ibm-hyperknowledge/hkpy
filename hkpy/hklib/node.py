@@ -12,13 +12,13 @@ from . import constants
 from . import HKConnector
 from . import HKLink
 from . import HKAnchor
+from . import HKParentedEntity
 
 __all__ = ['HKContext', 'HKNode', 'HKReferenceNode', 'HKTrail']
 
-class HKAnyNode(HKEntity):
+class HKAnyNode(HKParentedEntity):
     def __init__(self, type_, id_, parent, properties, metaproperties):
-        super().__init__(type_, id_, properties=properties, metaproperties=metaproperties)
-        self.parent = parent.id_ if isinstance(parent, HKContext) else parent
+        super().__init__(type_, id_, parent=parent, properties=properties, metaproperties=metaproperties)
         self.interfaces = {}
 
     def add_anchors(self, anchors: Union[HKAnchor, List[HKAnchor]]) -> None:
