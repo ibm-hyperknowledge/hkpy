@@ -111,6 +111,22 @@ class HKReferenceNode(HKAnyNode):
         super().__init__(type_=constants.HKType.REFERENCENODE, id_=id_, parent=parent, properties=properties, metaproperties=metaproperties)
         self.ref = ref.id_ if isinstance(ref, HKEntity) else ref
 
+    def to_dict(self, buffer) -> Dict:
+        """ Convert a HKEntity to a dict.
+
+        Returns
+        -------
+        (Dict) The HKEntity's correspondent dict
+        """
+
+        jobj = super().to_dict(buffer)
+
+        jobj['ref'] = self.ref
+
+        buffer[self.id_] = jobj
+
+        return jobj
+
 class HKTrail(HKAnyNode):
     """
     """

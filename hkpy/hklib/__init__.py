@@ -11,7 +11,7 @@ from .anchor import HKAnchor
 from .entity import HKEntity, HKParentedEntity
 from .connector import HKConnector
 from .link import HKLink
-from .node import HKNode, HKContext, HKReferenceNode, HKTrail
+from .node import HKAnyNode, HKNode, HKContext, HKReferenceNode, HKTrail
 
 def hkfy(entities: [Dict]) -> [HKEntity]:
     """ Convert an entity in string or dict format to a HKEntity object.
