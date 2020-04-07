@@ -86,6 +86,8 @@ class HKEntity(object):
                 jobj['type'] = v.value
             elif k == 'class_name':
                 jobj['className'] = v
+            elif k == 'properties':
+                jobj['properties'] = v
             elif k == 'metaproperties':
                 jobj['metaProperties'] = v
 
