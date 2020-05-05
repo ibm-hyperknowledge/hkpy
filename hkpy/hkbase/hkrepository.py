@@ -3,7 +3,7 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 
-from typing import TypeVar, List, Dict, Union, Optional, Any
+from typing import TypeVar, List, Dict, Union, Optional, Any, cast
 
 import os
 import copy
@@ -15,10 +15,13 @@ from . import HKTransaction, generate_id, constants
 from ..hklib import hkfy, HKEntity, HKContext
 from ..oops import HKBError, HKpyError
 from ..utils import response_validator
+from ..common.result_set import ResultSet
 
 __all__  = ['HKRepository']
 
 HKBase = TypeVar('HKBase')
+HKEntityResultSet = ResultSet[HKEntity]
+
 
 class HKRepository(object):
     """ This class establishes a communication interface with a repository within a hkbase.
@@ -207,7 +210,7 @@ class HKRepository(object):
         entities = self.get_entities(filter_={})
         self.delete_entities(ids=entities, transaction=None)
 
-    def hyql(self, query: str) -> List[HKEntity]:
+    def hyql(self, query: str) -> HKEntityResultSet:
         """ Performs a HyQL query on the repository and retrive its results.
 
         Parameters
@@ -216,18 +219,26 @@ class HKRepository(object):
         
         Returns
         -------
-        (List[HKEntity]) list of retrieved entities
+        HKEntityResultSet: A result set containing HKEntity objects
         """
 
         url = f'{self.base._repository_uri}/{self.name}/query/'
-        
+
         headers = copy.deepcopy(self._headers)
         headers['Content-Type'] = 'text/plain'
 
         response = requests.post(url=url, data=query, headers=headers)
         _, data = response_validator(response=response)
 
-        return [hkfy(entity) for entity in data]
+        data = cast(Union[List[dict], List[List[dict]]], data)
+        row_matrix = list()
+        for entry in data:
+            if isinstance(entry, dict):
+                entry = [entry]
+            row = [hkfy(e) for e in entry]
+            row_matrix.append(row)
+
+        return HKEntityResultSet.build(row_matrix=row_matrix)
 
     def list_objects(self) -> List[str]:
         """
