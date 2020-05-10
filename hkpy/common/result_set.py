@@ -42,6 +42,9 @@ class ResultRow(Generic[T]):
     def get_keys(self) -> List[str]:
         return self._result_set._keys
 
+    def __len__(self):
+        return len(self._row)
+
 
 T2 = TypeVar('T2')
 
@@ -64,3 +67,6 @@ class ResultSet(Generic[T2]):
 
     def __iter__(self):
         return ResultSetIterator(self)
+
+    def __len__(self) -> int:
+        return len(self._result)
