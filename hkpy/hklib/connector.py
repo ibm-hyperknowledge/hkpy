@@ -63,7 +63,7 @@ class HKConnector(HKEntity):
         jobj = super().to_dict(buffer)
 
         jobj['className'] = str(self.class_name)
-        jobj['roles'] = jobj['roles'] if 'roles' in jobj else {}
+        jobj['roles'] =  dict((r, v.value) for (r, v) in self.roles.items())
 
         buffer[self.id_] = jobj
 
