@@ -44,7 +44,12 @@ def hkfy(entities: [Dict]) -> [HKEntity]:
 
         hke = None
         if entity['type'] == constants.HKType.CONNECTOR:
-            hke = HKConnector(id_=entity['id'], class_name=entity['className'], roles=entity['roles'])
+            new_roles = {}
+            for (r, t) in entity['roles'].items():
+                role_type = constants.RoleType(t) if t in constants.RoleType.__members__.values() else t
+                new_roles[r] = role_type
+
+            hke = HKConnector(id_=entity['id'], class_name=entity['className'], roles=new_roles)
         elif entity['type'] in ['context', 'node', 'ref']:
             if entity['type'] == constants.HKType.CONTEXT:
                 hke = HKContext(id_=entity['id'], parent=entity['parent'])
