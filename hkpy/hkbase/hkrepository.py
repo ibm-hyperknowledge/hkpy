@@ -16,6 +16,7 @@ from ..hklib import hkfy, HKEntity, HKContext
 from ..oops import HKBError, HKpyError
 from ..utils import response_validator
 from ..common.result_set import ResultSet
+from .query import SPARQLResultSet
 
 __all__  = ['HKRepository']
 
@@ -239,6 +240,25 @@ class HKRepository(object):
             row_matrix.append(row)
 
         return HKEntityResultSet.build(row_matrix=row_matrix)
+
+    def sparql(self, query: str, reasoning: Optional[bool] = None, by_pass: Optional[bool] = None) -> SPARQLResultSet:
+        url = f'{self.base._repository_uri}/{self.name}/sparql/'
+
+        headers = copy.deepcopy(self._headers)
+        headers['Content-Type'] = 'text/plain'
+
+        params = {}
+
+        if reasoning is not None:
+            params['reasoning'] = 'true' if reasoning else 'false'
+
+        if by_pass is not None:
+            params['bypass'] = 'true' if by_pass else 'false'
+
+        response = requests.post(url=url, data=query, params=params, headers=headers)
+        _, data = response_validator(response=response)
+
+        return SPARQLResultSet(data)
 
     def list_objects(self) -> List[str]:
         """

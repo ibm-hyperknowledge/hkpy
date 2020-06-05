@@ -42,12 +42,15 @@ class ResultRow(Generic[T]):
     def get_keys(self) -> List[str]:
         return self._result_set._keys
 
+    def __len__(self):
+        return len(self._row)
+
 
 T2 = TypeVar('T2')
 
 
 class ResultSet(Generic[T2]):
-    def __init__(self, keys: Optional[str] = None, result: Optional[List[ResultRow[T2]]] = None):
+    def __init__(self, keys: Optional[List[str]] = None, result: Optional[List[ResultRow[T2]]] = None):
         self._keys = keys
         if result is None:
             result = list()
@@ -64,3 +67,11 @@ class ResultSet(Generic[T2]):
 
     def __iter__(self):
         return ResultSetIterator(self)
+
+    def __len__(self) -> int:
+        return len(self._result)
+
+    def __add__(self, other: 'ResultSet[T2]') -> 'ResultSet[T2]':
+        if self._keys != other._keys:
+            raise ValueError(f'Result set keys should match. ({self._keys}) and ({other._keys})')
+        return ResultSet[T2](self._keys, self._result.extend(other._result))
