@@ -210,13 +210,14 @@ class HKRepository(object):
         entities = self.get_entities(filter_={})
         self.delete_entities(ids=entities, transaction=None)
 
-    def hyql(self, query: str) -> HKEntityResultSet:
+    def hyql(self, query: str, transitivity: Optional[bool] = False) -> HKEntityResultSet:
         """ Performs a HyQL query on the repository and retrive its results.
 
         Parameters
         ----------
         query : (str) the HyQL query
-        
+        transitivity: (Optional[bool]): Hierarchical links will be evaluated as transitive
+
         Returns
         -------
         HKEntityResultSet: A result set containing HKEntity objects
@@ -227,7 +228,12 @@ class HKRepository(object):
         headers = copy.deepcopy(self._headers)
         headers['Content-Type'] = 'text/plain'
 
-        response = requests.post(url=url, data=query, headers=headers)
+        params = {}
+
+        if transitivity:
+            params['transitivity'] = 'true'
+
+        response = requests.post(url=url, data=query, params=params, headers=headers)
         _, data = response_validator(response=response)
 
         data = cast(Union[List[dict], List[List[dict]]], data)
