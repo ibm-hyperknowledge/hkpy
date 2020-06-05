@@ -250,10 +250,10 @@ class HKRepository(object):
         params = {}
 
         if reasoning is not None:
-            params['reasoning'] = reasoning
+            params['reasoning'] = 'true' if reasoning else 'false'
 
         if by_pass is not None:
-            params['bypass'] = by_pass
+            params['bypass'] = 'true' if by_pass else 'false'
 
         response = requests.post(url=url, data=query, params=params, headers=headers)
         _, data = response_validator(response=response)
