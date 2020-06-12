@@ -85,8 +85,7 @@ class HKNode(HKAnyNode):
         """
 
         super().__init__(type_=constants.HKType.NODE, id_=id_, parent=parent, properties=properties, metaproperties=metaproperties)
-        
-          
+               
 class HKReferenceNode(HKAnyNode):
     """
     """
