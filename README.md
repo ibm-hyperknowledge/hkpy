@@ -57,6 +57,60 @@ new_link = Link(connector=new_connector)
 new_link.add_bind(entity='some_entity_1', role='some_role_1')
 ```
 
+### Querying data
+
+#### HyQL
+
+WIP
+
+#### SPARQL
+Connect to a HKBase repository
+```
+from hkpy.hkbase import HKBase, HKRepository
+
+hkbase = HKBase(url='foo.bar', auth='some_token')
+hkrepository = hkbase.create_repository(name='new_repository')
+```
+
+```
+sparql_query = ('select ?s ?p ?o ?g {\n'
+                '   ?s ?p ?o\n'
+                '}')
+result_set = hkrepository.sparql(sparql_query)
+```
+
+You can consume the result_set in different ways:
+```
+# iterate over rows
+for row in result_set: 
+    # access via position in select
+    print(f's: {row[0].value}')
+    
+    # access via variable name in select
+    print(f'p: {row["p"].value}')
+    
+    # an empty variable returns none
+    print(f'g: {row["g"].value}')
+```
+
+```
+# splitting results_set's rows into variables
+for s, p, o in result_set:
+    print(f's: {s.value} p: {p.value} o:{o.value}')
+```
+
+```
+# Aside from its value, a row component also has some relevant metadata
+for s, p, o in result_set: 
+    print((f's value: {s.value}\n'
+           f's type: {s.type_}\n'
+           f's datatype: {s.datatype}'))
+```
+
+**Optional parameters** 
+- `reasoning: bool`
+- `by_pass: bool` 
+--- 
 **Documentation under construction**.
 
 For futher information please refer to the [tests/](#) for basic usage or [examples/](#) for concrete use cases.
