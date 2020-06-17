@@ -9,7 +9,7 @@ import os
 import copy
 import json
 import requests
-from io import TextIOWrapper, BufferedReader
+from io import TextIOWrapper, BufferedReader, BufferedIOBase
 
 from . import HKTransaction, generate_id, constants
 from ..hklib import hkfy, HKEntity, HKContext
@@ -277,13 +277,17 @@ class HKRepository(object):
 
         return data
 
-    def add_object(self, object_: [str, TextIOWrapper, BufferedReader], mimetype: str) -> str:
+    def add_object(self, object_: [str, TextIOWrapper, BufferedReader, BufferedIOBase], mimetype: str,
+                   id_: Optional[str] = None) -> str:
         """
         """
 
         url = f'{self.base._repository_uri}/{self.name}/storage/object'
-        
-        if isinstance(object_, (TextIOWrapper, BufferedReader)):
+
+        if id_ is not None:
+            url = f'{url}/{id_}'
+
+        if isinstance(object_, (TextIOWrapper, BufferedReader, BufferedIOBase)):
             object_ = object_.read()
         elif isinstance(object_, str) and os.path.isfile(object_):
             with open(object_ ,'rb') as f:
