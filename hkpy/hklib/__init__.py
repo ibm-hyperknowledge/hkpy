@@ -102,5 +102,6 @@ def hkfy(entities: [Dict]) -> [HKEntity]:
 
 
 from .graph import HKGraph
+from .hkpyo import *
 
 __all__ = ['hkfy']
