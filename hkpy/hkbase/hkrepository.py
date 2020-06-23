@@ -76,10 +76,7 @@ class HKRepository(object):
             entities = [entities]
         
         if isinstance(entities[0], HKEntity):
-            buffer = {}
-            for x in entities:
-                x.to_dict(buffer)
-            entities = list(buffer.values())
+            entities = [x.to_dict() for x in entities]
         elif isinstance(entities[0], dict):
             pass
             # entities = list(map(hkfy, entities))
@@ -137,7 +134,7 @@ class HKRepository(object):
         except Exception as err:
             raise HKBError(message='Could not retrieve the entities.', error=err)
         
-        return hkfy(data.values())
+        return [hkfy(entity) for entity in data.values()]
 
     def delete_entities(self, ids: Union[str, List[str], HKEntity, List[HKEntity]], transaction: Optional[HKTransaction]=None) -> None:
         """ Delete entities from the repository using their ids.

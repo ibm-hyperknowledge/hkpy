@@ -1,6 +1,11 @@
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 from collections import defaultdict
 
-from hkpyo.model import HKOContext, HKOContextManager, HKOConcept, HKOSubConceptAxiom, HKOConjunctionExpression, \
+from hkpy.hkpyo.model import HKOContext, HKOContextManager, HKOConcept, HKOSubConceptAxiom, HKOConjunctionExpression, \
     HKODisjunctionExpression, HKOConceptAssertion, HKOIndividual, HKOPropertyAssertion, HKOLiteral, Union, HKOAxiom, \
     HKOAssertion, HKOProperty
 

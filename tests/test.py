@@ -1,8 +1,13 @@
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 from hkpy.hkbase import HKBase
 
-from hkb import hkbo_simple, load_HKOContext_from_hkb
-from hkb.hkbo import HKOContextManagerHKB
-from hkpyo.model import HKOContextManager
+from hkpy.hkpyo.hkb import hkbo_simple, load_HKOContext_from_hkb
+from hkpy.hkpyo.hkb.hkbo import HKOContextManagerHKB
+from hkpy.hkpyo.model import HKOContextManager
 
 
 def test_save_to_file():

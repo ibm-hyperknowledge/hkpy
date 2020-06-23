@@ -7,18 +7,19 @@ from typing import Optional, Union, List, Dict
 
 import datetime
 
+from hkpy.hklib.entity import HKParentedEntity
 from . import HKEntity
 from . import constants
 from . import HKConnector
 from . import HKLink
 from . import HKAnchor
-from . import HKParentedEntity
 
-__all__ = ['HKContext', 'HKNode', 'HKReferenceNode', 'HKTrail']
+__all__ = ['HKContext', 'HKNode', 'HKReferenceNode', 'HKTrail', 'HKAnyNode']
 
 class HKAnyNode(HKParentedEntity):
     def __init__(self, type_, id_, parent, properties, metaproperties):
-        super().__init__(type_, id_, parent=parent, properties=properties, metaproperties=metaproperties)
+        super().__init__(type_, id_, properties=properties, metaproperties=metaproperties)
+        self.parent = parent.id_ if isinstance(parent, HKContext) else parent
         self.interfaces = {}
 
     def add_anchors(self, anchors: Union[HKAnchor, List[HKAnchor]]) -> None:
@@ -110,7 +111,7 @@ class HKReferenceNode(HKAnyNode):
         super().__init__(type_=constants.HKType.REFERENCENODE, id_=id_, parent=parent, properties=properties, metaproperties=metaproperties)
         self.ref = ref.id_ if isinstance(ref, HKEntity) else ref
 
-    def to_dict(self, buffer) -> Dict:
+    def to_dict(self) -> Dict:
         """ Convert a HKEntity to a dict.
 
         Returns
@@ -118,11 +119,9 @@ class HKReferenceNode(HKAnyNode):
         (Dict) The HKEntity's correspondent dict
         """
 
-        jobj = super().to_dict(buffer)
+        jobj = super().to_dict()
 
         jobj['ref'] = self.ref
-
-        buffer[self.id_] = jobj
 
         return jobj
 

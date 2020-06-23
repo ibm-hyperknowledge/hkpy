@@ -1,20 +1,15 @@
-""" HKB-based HKO store
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
 
-    - Can load a single context without subcontexts
-    - Deals with supercontext chains by using HKOContextExpandable as a placeholder for super contexts
-
-    TODO: implement full support for refering to nodes in other contexts
-    TODO: implement full support to load child contexts
-    TODO: many other things
-
-"""
 from hkpy.hkbase import HKRepository
-from hkpy.hklib import HKContext, HKConnector
+from hkpy.hklib import HKContext, HKConnector, HKEntity
 
-from hkpyo.converters.HKOWriterHKG import HKOWriterHKG
-from hkpyo.converters.HKOReaderHKG import HKOContextExpandable, HKOReaderHKG
-from hkpyo.model import *
-from hkpyo.converters.utils import encode_iri, decode_iri
+from hkpy.hkpyo.converters.HKOWriterHKG import HKOWriterHKG
+from hkpy.hkpyo.converters.HKOReaderHKG import HKOContextExpandable, HKOReaderHKG
+from hkpy.hkpyo.model import *
+from hkpy.hkpyo.converters.utils import encode_iri, decode_iri
 
 def load_HKOContext_from_hkb(iri: str, repo : HKRepository) -> HKOContext:
 
@@ -54,3 +49,14 @@ def save_HKOContext_to_hkb(context : HKOContext, repo : HKRepository):
 
     print("Sending ", len(buffer), "entities to HKB. Nodes and links: ",len(buffer)-n_conntext, ". Connectors and contexts:", n_conntext)
     repo.add_entities(buffer)
+
+
+def generate_hkentities_for_HKOContext(context : HKOContext) -> [HKEntity]:
+    writer = HKOWriterHKG()
+    buffer = writer.writeHKOContext(context)
+
+    n_conntext = len(list(filter(lambda x: isinstance(x, HKConnector) or isinstance(x, HKContext), buffer)))
+
+    print("Generating ", len(buffer), "entities to HKB. Nodes and links: ",len(buffer)-n_conntext, ". Connectors and contexts:", n_conntext)
+
+    return buffer

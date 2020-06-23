@@ -1,3 +1,8 @@
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 import json
 from typing import TypeVar, Union, Dict
 
@@ -428,12 +433,12 @@ class HKOContextManager:
 
     def saveHKOContextToFile(self, context : HKOContext, file_path : str):
         with open(file_path, mode="w") as f:
-            from hkpyo.converters.HKOWriterHKG import HKOWriterHKG
+            from hkpy.hkpyo.converters.HKOWriterHKG import HKOWriterHKG
             writer = HKOWriterHKG()
             entities = writer.writeHKOContext(context)
             buffer = {}
             for x in entities:
-                x.to_dict(buffer)
+                buffer[x.id_] = x.to_dict()
             json_entities = list(buffer.values())
             f.write(json.dumps(json_entities))
 
@@ -442,19 +447,21 @@ class HKOContextManager:
             file_data = f.read()
             file_data_json = json.loads(file_data)
 
-            hkg_context = None
-            for entity in file_data_json:
-                if entity['id'] == '<' + context_iri + '>':
-                    #remove context node from file data
-                    hkg_context = hkfy([entity])[0]
-                    file_data_json.remove(entity)
-                    break
-            if hkg_context is None: raise Exception('Context iri is not present in the file.')
+            hkg_graph = {}
+            for e in file_data_json:
+                hke = hkfy(e)
+                hkg_graph[hke.id_] = hke
 
-            from hkpyo.converters.HKOReaderHKG import HKOContextExpandable
+            hkg_context = hkg_graph.get('<' + context_iri + '>', None)
+            del hkg_graph[hkg_context.id_]
+
+            if hkg_context is None:
+                raise Exception('Context iri is not present in the file.')
+
+            from hkpy.hkpyo.converters.HKOReaderHKG import HKOContextExpandable
             hko_pcontext = HKOContext(hkg_context.id_[1:-1], HKOContextExpandable(iri=hkg_context.parent))
 
-            from hkpyo.converters.HKOReaderHKG import HKOReaderHKG
+            from hkpy.hkpyo.converters.HKOReaderHKG import HKOReaderHKG
             reader = HKOReaderHKG()
             reader.readHKOintoContextFromHKGJson(file_data_json, self.getHKOContextBuilder(hko_pcontext))
 

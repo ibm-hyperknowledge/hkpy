@@ -1,3 +1,8 @@
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 import uuid
 from typing import Dict, Set
 
@@ -5,10 +10,10 @@ from hkpy.hklib import HKEntity, HKNode, HKLink, HKContext, HKConnector, HKRefer
 from hkpy.hklib import HKAnyNode
 from hkpy.utils import ConnectorType, RoleType
 
-from .utils import encode_contextualized_iri_individual_node, encode_contextualized_iri_property_node, encode_iri, \
+from hkpy.hkpyo.converters.utils import encode_contextualized_iri_individual_node, encode_contextualized_iri_property_node, encode_iri, \
     decode_iri
-from .constants import *
-from hkpyo.model import *
+from hkpy.hkpyo.converters.constants import *
+from hkpy.hkpyo.model import *
 
 HKOCONCEPT_NODE = HKNode(id_=encode_iri(CONCEPT_IRI))
 HKOPROPERTY_REF_NODE = HKReferenceNode(id_="ref-to-" + PROPERTY_IRI, ref=PROPERTY_IRI)
@@ -31,11 +36,11 @@ class HKOWriterHKG:
 
         hk_link = HKLink(
             id_=INSTANCEOF_CONNECTOR + '-' + str(uuid.uuid4()),
-            connector=INSTANCEOF_CONNECTOR,
+            connector=encode_iri(INSTANCEOF_CONNECTOR),
             parent=parent)
 
-        hk_link.add_bind('instance', individual)
-        hk_link.add_bind('concept', concept)
+        hk_link.add_bind('subject', individual.id_)
+        hk_link.add_bind('object', concept.id_)
 
         return hk_link
 
@@ -43,9 +48,9 @@ class HKOWriterHKG:
         connectors = {}
 
         # fix meta
-        connectors[INSTANCEOF_CONNECTOR] = HKConnector(id_=INSTANCEOF_CONNECTOR, class_name=ConnectorType.HIERARCHY,
-                                                       roles={"instance": RoleType.CHILD,
-                                                              'concept': RoleType.PARENT})
+        connectors[INSTANCEOF_CONNECTOR] = HKConnector(id_=encode_iri(INSTANCEOF_CONNECTOR), class_name=ConnectorType.HIERARCHY,
+                                                       roles={"subject": RoleType.CHILD,
+                                                              'object': RoleType.PARENT})
         connectors[SUBCONCEPTOF_CONNECTOR] = HKConnector(id_=SUBCONCEPTOF_CONNECTOR, class_name=ConnectorType.HIERARCHY,
                                                          roles={"sub": RoleType.CHILD,
                                                                 'sup': RoleType.PARENT})
@@ -170,9 +175,9 @@ class HKOWriterHKG:
             parent=currentContext.id_,
         )
 
-        hkg_link.add_bind('head_concept', hkg_node)
-        hkg_link.add_bind('property', property_g)
-        hkg_link.add_bind('concept', concept_g)
+        hkg_link.add_bind('head_concept', hkg_node.id_)
+        hkg_link.add_bind('property', property_g.id_)
+        hkg_link.add_bind('concept', concept_g.id_)
 
         serializing_kit.mapConceptExpressionToHkg[e] = hkg_node
 
@@ -202,15 +207,15 @@ class HKOWriterHKG:
         )
 
         hkg_link: HKLink = HKLink(
-            id_="link" + "_:" + blank_node_id,
+            id_= "_:" + blank_node_id,
             connector=CONJUNCTION_CONNECTOR,
             parent=currentContext.id_,
         )
 
-        hkg_link.add_bind('head_concept', hkg_node)
+        hkg_link.add_bind('head_concept', hkg_node.id_)
 
         for c in concepts_g:
-            hkg_link.add_bind('concepts', c)
+            hkg_link.add_bind('concepts', c.id_)
 
         serializing_kit.mapConceptExpressionToHkg[e] = hkg_node
 
@@ -240,12 +245,12 @@ class HKOWriterHKG:
         )
 
         hkg_link: HKLink = HKLink(
-            id_="link" + "_:" + blank_node_id,
+            id_="_:" + blank_node_id,
             connector=DISJUNCTION_CONNECTOR,
             parent=currentContext.id_,
         )
 
-        hkg_link.add_bind('head_concept', hkg_node)
+        hkg_link.add_bind('head_concept', hkg_node.id)
 
         for c in concepts_g:
             hkg_link.add_bind('concepts', c)
@@ -277,8 +282,8 @@ class HKOWriterHKG:
             parent=currentContext.id_,
         )
 
-        hkg_link.add_bind('sub', esub)
-        hkg_link.add_bind('sup', esup)
+        hkg_link.add_bind('sub', esub.id_)
+        hkg_link.add_bind('sup', esup.id_)
 
         serializing_kit.writtenHkG.append(hkg_link)
         serializing_kit.writtenHkO.add(e)
@@ -304,8 +309,8 @@ class HKOWriterHKG:
             parent=currentContext.id_,
         )
 
-        hkg_link.add_bind('left', ecA)
-        hkg_link.add_bind('right', ecB)
+        hkg_link.add_bind('left', ecA.id_)
+        hkg_link.add_bind('right', ecB.id_)
 
         serializing_kit.writtenHkG.append(hkg_link)
         serializing_kit.writtenHkO.add(e)
@@ -327,12 +332,12 @@ class HKOWriterHKG:
 
         hkg_link: HKLink = HKLink(
             id_=INSTANCEOF_CONNECTOR + '-' + str(uuid.uuid4()),
-            connector=INSTANCEOF_CONNECTOR,
+            connector=encode_iri(INSTANCEOF_CONNECTOR),
             parent=currentContext.id_,
         )
 
-        hkg_link.add_bind('concept', hkg_concept)
-        hkg_link.add_bind('instance', hkg_individual)
+        hkg_link.add_bind('object', hkg_concept.id_)
+        hkg_link.add_bind('subject', hkg_individual.id_)
 
         serializing_kit.writtenHkG.append(hkg_link)
         serializing_kit.writtenHkO.add(e)
@@ -357,8 +362,8 @@ class HKOWriterHKG:
             hkg_arg2 = serializing_kit.mapIndividualToHkg.get(e.arg2)
 
             hkg_connector = HKConnector(id_=encode_iri(e.property.iri), class_name=ConnectorType.FACTS,
-                                                roles={"arg1": RoleType.SUBJECT,
-                                                       'arg2': RoleType.OBJECT})
+                                                roles={HK_BIND_ARG_1: RoleType.SUBJECT,
+                                                       HK_BIND_ARG_2: RoleType.OBJECT})
 
             hkg_link: HKLink = HKLink(
                 id_=encode_iri(e.property.iri + '-' + str(uuid.uuid4())),
@@ -366,8 +371,8 @@ class HKOWriterHKG:
                 parent=currentContext.id_,
             )
 
-            hkg_link.add_bind('arg1', hkg_arg1)
-            hkg_link.add_bind('arg2', hkg_arg2)
+            hkg_link.add_bind(HK_BIND_ARG_1, hkg_arg1.id_)
+            hkg_link.add_bind(HK_BIND_ARG_2, hkg_arg2.id_)
 
             serializing_kit.writtenHkG.append(hkg_connector)
             serializing_kit.writtenHkG.append(hkg_link)

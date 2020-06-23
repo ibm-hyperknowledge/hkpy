@@ -1,5 +1,9 @@
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
 
-from hkpyo.model import *
+from hkpy.hkpyo.model import *
 
 
 def test_save_to_file():

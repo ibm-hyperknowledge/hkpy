@@ -1,21 +1,16 @@
-""" HKB-based HKO store
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
 
-    - Can load a single context without subcontexts
-    - Deals with supercontext chains by using HKOContextExpandable as a placeholder for super contexts
-
-    TODO: implement full support for refering to nodes in other contexts
-    TODO: implement full support to load child contexts
-    TODO: many other things
-
-"""
 from typing import TypeVar
 
 from hkpy.hkbase import HKRepository
 
-from hkpyo.converters.HKOReaderHKG import HKOContextExpandable
-from hkpyo.converters.utils import encode_iri, decode_iri
+from hkpy.hkpyo.converters.HKOReaderHKG import HKOContextExpandable
+from hkpy.hkpyo.converters.utils import encode_iri, decode_iri
 
-from hkpyo.model import *
+from hkpy.hkpyo.model import *
 
 HKOContextManagerHKB = TypeVar('HKOContextManagerHKB')
 
@@ -71,7 +66,7 @@ class HKOContextManagerHKB(HKOContextManager):
         #
         # cb = self.getHKOContextBuilder(hko_pcontext)
 
-        from converters.HKOReaderHKG import HKOReaderHKG
+        from hkpy.hkpyo.converters.HKOReaderHKG import HKOReaderHKG
         reader = HKOReaderHKG()
         reader.readHKOintoContext(hkg_context_graph, self.getHKOContextBuilder(hko_pcontext))
 
@@ -87,7 +82,7 @@ class HKOContextManagerHKB(HKOContextManager):
         context.elements.append(axiom)
 
     def commitHKOContext(self, context : HKOContext):
-        from converters.HKOWriterHKG import HKOWriterHKG
+        from hkpy.hkpyo.converters.HKOWriterHKG import HKOWriterHKG
         writer = HKOWriterHKG()
         buffer = writer.writeHKOContext(context)
         self.repo.add_entities(buffer)

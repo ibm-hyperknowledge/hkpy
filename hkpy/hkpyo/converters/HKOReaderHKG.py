@@ -1,13 +1,17 @@
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 from hkpy.hklib import HKLink, HKEntity, HKNode, HKContext, HKReferenceNode, HKConnector
 
-from .utils import decode_contextualized_iri_individual_node, decode_contextualized_iri_property_node, decode_iri, \
+from hkpy.hkpyo.converters.utils import decode_contextualized_iri_individual_node, decode_contextualized_iri_property_node, decode_iri, \
     encode_iri
-from .constants import *
-from hkpyo.model import *
+from hkpy.hkpyo.converters.constants import *
+from hkpy.hkpyo.model import *
 
 HKOCONCEPT_NODE = HKNode(id_=encode_iri(CONCEPT_IRI))
 HKOPROPERTY_NODE = HKNode(id_=encode_iri(PROPERTY_IRI))
-
 
 
 EXCLUDE_META = True #exclude meta axioms
@@ -26,11 +30,11 @@ class HKOReaderHKG:
 
         to_remove = set()
         for e in parsing_kit.hkg_entities:
-            if isinstance(e, HKLink) and e.connector == INSTANCEOF_CONNECTOR:
+            if isinstance(e, HKLink) and e.connector == encode_iri(INSTANCEOF_CONNECTOR):
                 #separate meta entities
 
-                cnode = e.get_bind_value_no_anchor('concept')
-                inode = e.get_bind_value_no_anchor('instance')
+                cnode = parsing_kit.get_HKNode(e.get_bind_value_no_anchor('object'))
+                inode = parsing_kit.get_HKNode(e.get_bind_value_no_anchor('subject'))
 
 
                 # if cnode.id_ not in parsing_kit.tbox:
@@ -59,7 +63,7 @@ class HKOReaderHKG:
                     or e.connector == EXISTS_CONNECTOR
                     or e.connector == FORALL_CONNECTOR
                     or e.connector == NOT_CONNECTOR):
-                head_node = e.get_bind_value_no_anchor('head_concept')
+                head_node = parsing_kit.get_HKNode(e.get_bind_value_no_anchor('head_concept'))
                 parsing_kit.expressions[head_node.id_] = e
             elif isinstance(e, HKContext):
                 print("Ignoring HKContext in json file")
@@ -116,8 +120,8 @@ class HKOReaderHKG:
     def _readHKOExistsExpression(self, e: HKLink, parsing_kit) -> HKOExistsExpression:
 
         parsing_kit.state_stack.append({'expecting_tbox_nodes':True})
-        hko_property = self._readHKOProperty(e.get_bind_value_no_anchor('property'), parsing_kit)
-        hko_concept = self._readHKOConceptExpressionNode(e.get_bind_value_no_anchor('concept'), parsing_kit)
+        hko_property = self._readHKOProperty(parsing_kit.get_HKNode(e.get_bind_value_no_anchor('property')), parsing_kit)
+        hko_concept = self._readHKOConceptExpressionNode(parsing_kit.get_HKNode(e.get_bind_value_no_anchor('concept')), parsing_kit)
         parsing_kit.state_stack.pop()
 
         hko_expression = parsing_kit.cb.getHKOExistsExpression(property=hko_property, concept=hko_concept)
@@ -128,7 +132,7 @@ class HKOReaderHKG:
         # if e in self.writtenHk:
         #     return None  # already written
 
-        hkg_concepts = e.get_bind_values_no_anchor('concepts')
+        hkg_concepts = list(parsing_kit.get_HKNode(x) for x in e.get_bind_values_no_anchor('concepts'))
 
         hko_concepts = []
         parsing_kit.state_stack.append({'expecting_box':'tbox'})
@@ -147,7 +151,7 @@ class HKOReaderHKG:
         # if e in self.writtenHk:
         #     return None  # already written
 
-        hkg_concepts = e.get_bind_values_no_anchor('concepts')
+        hkg_concepts = list(parsing_kit.get_HKNode(x) for x in e.get_bind_values_no_anchor('concepts'))
 
         hko_concepts = []
         parsing_kit.state_stack.append({'expecting_box':'tbox'})
@@ -168,8 +172,8 @@ class HKOReaderHKG:
         # Assuming e.context = cb.context
         assert (decode_iri(e.parent) == parsing_kit.cb.context.iri)
 
-        osub = self._readHKOConceptExpressionNode(e.get_bind_value_no_anchor('sub'), parsing_kit)
-        osup = self._readHKOConceptExpressionNode(e.get_bind_value_no_anchor('sup'), parsing_kit)
+        osub = self._readHKOConceptExpressionNode(parsing_kit.get_HKNode(e.get_bind_value_no_anchor('sub')), parsing_kit)
+        osup = self._readHKOConceptExpressionNode(parsing_kit.get_HKNode(e.get_bind_value_no_anchor('sup')), parsing_kit)
 
         hkoax_subconcept = parsing_kit.cb.getHKOSubConceptAxiom(sub=osub, sup=osup)
         parsing_kit.cb.context.addAxiom(hkoax_subconcept)
@@ -186,8 +190,8 @@ class HKOReaderHKG:
         # Assuming e.context = cb.context
         assert (decode_iri(e.parent) == parsing_kit.cb.context.iri)
 
-        osub = self._readHKOConceptExpressionNode(e.get_bind_value_no_anchor('left'), parsing_kit)
-        osup = self._readHKOConceptExpressionNode(e.get_bind_value_no_anchor('right'), parsing_kit)
+        osub = self._readHKOConceptExpressionNode(parsing_kit.get_HKNode(e.get_bind_value_no_anchor('left')), parsing_kit)
+        osup = self._readHKOConceptExpressionNode(parsing_kit.get_HKNode(e.get_bind_value_no_anchor('right')), parsing_kit)
 
         hkoax_subconcept = parsing_kit.cb.getHKOEquivalentConceptAxiom(sub=osub, sup=osup)
         parsing_kit.cb.context.addAxiom(hkoax_subconcept)
@@ -204,8 +208,8 @@ class HKOReaderHKG:
         assert (decode_iri(e.parent) == parsing_kit.cb.context.iri)
 
 
-        hkgn_concept = e.get_bind_value_no_anchor('concept')
-        hkgn_instance = e.get_bind_value_no_anchor('instance')
+        hkgn_concept = parsing_kit.get_HKNode(e.get_bind_value_no_anchor('object'))
+        hkgn_instance = parsing_kit.get_HKNode(e.get_bind_value_no_anchor('subject'))
 
         parsing_kit.state_stack.append({'expecting_box':'tbox'})
         hkoc_concept = self._readHKOConceptExpressionNode(hkgn_concept,parsing_kit)
@@ -237,8 +241,8 @@ class HKOReaderHKG:
         # parsing_kit.state_stack.pop()
 
         hkgn_property = e.connector
-        hkgn_arg1 = e.get_bind_value_no_anchor('arg1')
-        hkgn_arg2 = e.get_bind_value_no_anchor('arg2')
+        hkgn_arg1 = parsing_kit.get_HKNode(e.get_bind_value_no_anchor(HK_BIND_ARG_1))
+        hkgn_arg2 = parsing_kit.get_HKNode(e.get_bind_value_no_anchor(HK_BIND_ARG_2))
 
         parsing_kit.state_stack.append({'expecting_box': 'tbox'})
         hkop_property = self._readHKOPropertyConnector(hkgn_property, parsing_kit)
@@ -297,9 +301,9 @@ class HKOReaderHKG:
             return self._readHKOEquivalentConceptAxiom(e, parsing_kit)
         elif isinstance(e, HKLink) and e.connector == EXISTS_CONNECTOR:
             return self._readHKOExistsExpression(e, parsing_kit)
-        elif isinstance(e, HKLink) and e.connector == INSTANCEOF_CONNECTOR:
+        elif isinstance(e, HKLink) and e.connector == encode_iri(INSTANCEOF_CONNECTOR):
             return self._readHKOConceptAssertion(e, parsing_kit)
-        elif isinstance(e, HKLink) and 'arg1' in e.binds and 'arg2' in e.binds:
+        elif isinstance(e, HKLink) and HK_BIND_ARG_1 in e.binds and HK_BIND_ARG_2 in e.binds:
             #TODO: any other FACT link should be a property assertion
             return self._readHKOPropertyAssertion(e, parsing_kit)
         elif e.id_ in parsing_kit.abox or e.id_ in parsing_kit.tbox or e.id_ in parsing_kit.expressions:
@@ -317,8 +321,8 @@ class HKOReaderHKG:
             self._readRouter(e, parsing_kit)
 
 
-    def readHKOintoContextFromHKGJson(self, json : [Dict], context_builder: HKOContextBuilder):
-        hkentities = hkfy(json)
+    def readHKOintoContextFromHKGJson(self, json_entities : [Dict], context_builder: HKOContextBuilder):
+        hkentities = list(hkfy(e) for e in json_entities)
         self.readHKOintoContext(hkentities, context_builder)
 
     def readHKOintoContext(self, hkg_context_graph: [HKEntity], context_builder: HKOContextBuilder):
@@ -333,26 +337,34 @@ class HKOReaderHKG:
         :return:
         """
 
-        # dict_hkg_entities = {}
+        index_hkg_entities = {}
 
-        # for e in hkg_context_graph:
-        #     dict_hkg_entities[e.id_] = e
+        for e in hkg_context_graph:
+            index_hkg_entities[e.id_] = e
 
         # parsing kit object to pass along parsing functions. It is also called parsing context in some implementations
         class ParsinKit:
-            self.cb: HKOContextBuilder = None
-            self.hkg_entities = {}
-            self.loaded_axioms = []
-            self.tbox: Dict[str, HKOElement] = {}
-            self.abox: Dict[str, HKOElement] = {}
-            self.expressions: Dict[str, HKLink] = {} # map blank node -> concept expressions
-            self.expecting_tbox_nodes = False # control for punning
-            self.state_stack = []
+
+            def __init__(self):
+                self.cb: HKOContextBuilder = None
+                self.hkg_entities = {}
+                self.loaded_axioms = []
+                self.hke_index = {}
+                self.tbox: Dict[str, HKOElement] = {}
+                self.abox: Dict[str, HKOElement] = {}
+                self.expressions: Dict[str, HKLink] = {} # map blank node -> concept expressions
+                self.expecting_tbox_nodes = False # control for punning
+                self.state_stack = []
+
+            def get_HKNode(self, id_):
+                return self.hke_index.get(id_, HKNode(id_))
+
 
 
         parsing_kit = ParsinKit()
         parsing_kit.cb = context_builder
         parsing_kit.hkg_entities = hkg_context_graph
+        parsing_kit.hke_index = index_hkg_entities
         parsing_kit.loaded_axioms = []
         parsing_kit.tbox: Dict[str, HKOElement] = {}
         parsing_kit.abox: Dict[str, HKOElement] = {}

@@ -1,8 +1,14 @@
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
+
 from hkpy.hkbase import HKBase
 
-from hkb import hkbo_simple, load_HKOContext_from_hkb
-from hkb.hkbo import HKOContextManagerHKB
-from hkpyo.model import HKOContextManager
+from hkpy.hkpyo.hkb import hkbo_simple, load_HKOContext_from_hkb
+from hkpy.hkpyo.hkb.hkbo import HKOContextManagerHKB
+from hkpy.hkpyo.model import HKOContextManager
 
 
 
@@ -37,8 +43,7 @@ def test_save_to_hkb_ctxA():
 
     cm.commitHKOContext(hkctxFamilyContext)
 
-    print(hkctxFamilyContext)
-
+    return hkctxFamilyContext
 
 def test_save_to_hkb_ctxB():
     hkbase = HKBase(url='http://localhost:3000')
@@ -70,7 +75,7 @@ def test_save_to_hkb_ctxB():
 
     cm.commitHKOContext(hkctxFamilyContext)
 
-    print(hkctxFamilyContext)
+    return hkctxFamilyContext
 
 def test_load_from_hkb():
     hkbase = HKBase(url='http://localhost:3000')
@@ -79,20 +84,28 @@ def test_load_from_hkb():
 
     cm = HKOContextManagerHKB(repo)
 
-    context = cm.readHKOContext('http://brl.ibm.com/hko/example1#FamilyContextA')
+    contextA = cm.readHKOContext('http://brl.ibm.com/hko/example1#FamilyContextA')
 
-    print(context)
+    contextB = cm.readHKOContext('http://brl.ibm.com/hko/example1#FamilyContextB')
 
-    context = cm.readHKOContext('http://brl.ibm.com/hko/example1#FamilyContextB')
-
-    print(context)
-
-
+    return contextA, contextB
 
 
 print('Testing saving and loading from hkb:')
-test_save_to_hkb_ctxA()
-test_save_to_hkb_ctxB()
-test_load_from_hkb()
+print('Generate and save:')
+saved_ctxA = test_save_to_hkb_ctxA()
+saved_ctxB = test_save_to_hkb_ctxB()
+
+print(saved_ctxA)
+print(saved_ctxB)
+
+print('Loaded:')
+loaded_ctxA, loaded_ctxB = test_load_from_hkb()
+
+print(loaded_ctxA)
+print(loaded_ctxB)
+
+assert set(saved_ctxA.elements) == set(loaded_ctxA.elements)
+assert set(saved_ctxB.elements) == set(loaded_ctxB.elements)
 
 

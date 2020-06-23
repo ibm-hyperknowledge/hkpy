@@ -8,12 +8,12 @@ from typing import Union, Dict
 from ..utils import constants, generate_id
 
 from .anchor import HKAnchor
-from .entity import HKEntity, HKParentedEntity
+from .entity import HKEntity
 from .connector import HKConnector
 from .link import HKLink
-from .node import HKAnyNode, HKNode, HKContext, HKReferenceNode, HKTrail
+from .node import HKNode, HKContext, HKReferenceNode, HKTrail, HKAnyNode
 
-def hkfy(entities: [Dict]) -> [HKEntity]:
+def hkfy(entity: Union[str, Dict]) -> HKEntity:
     """ Convert an entity in string or dict format to a HKEntity object.
 
     Parameters
@@ -26,30 +26,16 @@ def hkfy(entities: [Dict]) -> [HKEntity]:
     """
 
     # TODO: check_consistency
-    if isinstance(entities, HKEntity):
-        return entities
-
-    # TODO: add a hkpyerror exection
-    #if not isinstance(entities, [dict]): raise (Exception)
-
-
-    # _check_consistency()
-
-    #process non-links first
-    nodes_buffer = {}
-    for entity in entities:
-        if not isinstance(entity, dict): raise Exception("Wrong json format.")
-        if entity['type'] == constants.HKType.LINK: continue
-
-
+    if isinstance(entity, HKEntity):
+        return entity
+        
+    if isinstance(entity, dict):
+        
+        # _check_consistancy()
         hke = None
         if entity['type'] == constants.HKType.CONNECTOR:
-            new_roles = {}
-            for (r, t) in entity['roles'].items():
-                role_type = constants.RoleType(t) if t in constants.RoleType.__members__.values() else t
-                new_roles[r] = role_type
-
-            hke = HKConnector(id_=entity['id'], class_name=entity['className'], roles=new_roles)
+            hke = HKConnector(id_=entity['id'], class_name=entity['className'], roles=entity['roles'])
+        
         elif entity['type'] in ['context', 'node', 'ref']:
             if entity['type'] == constants.HKType.CONTEXT:
                 hke = HKContext(id_=entity['id'], parent=entity['parent'])
@@ -57,51 +43,27 @@ def hkfy(entities: [Dict]) -> [HKEntity]:
                 hke = HKNode(id_=entity['id'], parent=entity['parent'])
             elif entity['type'] == constants.HKType.REFERENCENODE:
                 ref = entity['ref'] if 'ref' in entity else None
-                hke = HKReferenceNode(id_=entity['id'], ref=ref, parent=entity['parent'])
+                hke = HKReferenceNode(id_=entity['id'], ref=ref, parent=entity['parent'])       
             if 'interfaces' in entity:
                 hke.interfaces = entity['interfaces']
 
+        elif entity['type'] == constants.HKType.LINK:
+            hke = HKLink(connector=entity['connector'], id_=entity['id'], binds=entity['binds'], parent=entity['parent'])
+
         elif entity['type'] == constants.HKType.ANCHOR:
             raise NotImplementedError
-
+        
         if 'properties' in entity:
             hke.add_properties(properties=entity['properties'])
         if 'metaproperties' in entity:
             hke.add_properties(properties=entity['metaproperties'])
 
-        nodes_buffer[hke.id_] = hke
+        return hke
 
-    links_buffer = []
-    for entity in entities:
-        if entity['type'] != constants.HKType.LINK: continue
-
-        hke = HKLink(connector=entity['connector'], id_=entity['id'], parent=entity['parent'])
-
-        if 'binds'in entity:
-            for role, nodes in entity['binds'].items():
-                for id_, anchors in nodes.items():
-                    for anchor in anchors:
-                        if id_ in nodes_buffer:
-                            binded_node = nodes_buffer[id_]
-                        else:
-                            #TODO: weak instantiation of node using only id
-                            binded_node = HKNode(id_=id_)
-                            nodes_buffer[binded_node.id_] = binded_node
-                        hke.add_bind(role, binded_node, anchor)
-
-        if 'properties' in entity:
-            hke.add_properties(properties=entity['properties'])
-        if 'metaproperties' in entity:
-            hke.add_properties(properties=entity['metaproperties'])
-
-        links_buffer.append(hke)
-
-    return list(nodes_buffer.values()) + links_buffer
-
-
+    # TODO: add a hkpyerror exection
+    raise(Exception)
 
 
 from .graph import HKGraph
-from .hkpyo import *
 
 __all__ = ['hkfy']

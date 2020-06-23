@@ -52,19 +52,17 @@ class HKConnector(HKEntity):
             for name, type_ in roles.items():
                 self.roles[name] = type_
 
-    def to_dict(self, buffer) -> Dict:
-        """ Convert a HKConnector to a dict and adds itself to buffer.
+    def to_dict(self) -> Dict:
+        """ Convert a HKConnector to a dict
 
         Returns
         -------
         (Dict) The HKConnector's correspondent dict
         """
 
-        jobj = super().to_dict(buffer)
+        jobj = super().to_dict()
 
         jobj['className'] = str(self.class_name)
         jobj['roles'] =  dict((r, v.value) for (r, v) in self.roles.items())
-
-        buffer[self.id_] = jobj
 
         return jobj

@@ -1,5 +1,10 @@
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 from hkpy.hklib import HKReferenceNode, HKContext, HKNode, HKEntity
-from hkpyo.model import HKOIndividual, HKOProperty
+from hkpy.hkpyo.model import HKOIndividual, HKOProperty
 import urllib
 
 encode_uri_component = urllib.parse.quote
