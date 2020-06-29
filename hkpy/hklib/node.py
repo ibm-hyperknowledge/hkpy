@@ -44,6 +44,20 @@ class HKAnyNode(HKParentedEntity):
                 interface['metaproperties'] = anchor.metaproperties
             
             self.interfaces[anchor.key] = interface
+    
+    def to_dict(self) -> Dict:
+        """ Convert a HKAnyNode to a dict.
+
+        Returns
+        -------
+        (Dict) The HKAnyNode's correspondent dict
+        """
+
+        jobj = super().to_dict()
+
+        jobj['interfaces'] = self.interfaces
+
+        return jobj
 
 class HKContext(HKAnyNode):
     """
@@ -112,11 +126,11 @@ class HKReferenceNode(HKAnyNode):
         self.ref = ref.id_ if isinstance(ref, HKEntity) else ref
 
     def to_dict(self) -> Dict:
-        """ Convert a HKEntity to a dict.
+        """ Convert a HKReferenceNode to a dict.
 
         Returns
         -------
-        (Dict) The HKEntity's correspondent dict
+        (Dict) The HKReferenceNode's correspondent dict
         """
 
         jobj = super().to_dict()

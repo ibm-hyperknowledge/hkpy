@@ -115,8 +115,6 @@ class HKLink(HKParentedEntity):
         jobj = super().to_dict()
 
         jobj['connector'] = self.connector
-
         jobj['binds'] = self.binds
-
 
         return jobj
