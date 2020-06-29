@@ -113,6 +113,6 @@ class HKParentedEntity(HKEntity):
         if self.parent:
             jobj['parent'] = self.parent
         else:
-            jobj['parent'] = 'null'
+            jobj['parent'] = None
 
         return jobj
