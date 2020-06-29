@@ -78,16 +78,18 @@ class HKEntity(object):
         for k, v in self.__dict__.items():
             if not v and k not in ['parent', 'children']:
                 continue
+            # the following structure allows to change the hkpy attributes name to the real hkbase names
             if k in 'id_':
                 jobj['id'] = v
             elif k == 'type_':
                 jobj['type'] = v.value
             elif k == 'class_name':
                 jobj['className'] = v
-            elif k == 'properties':
-                jobj['properties'] = v
             elif k == 'metaproperties':
                 jobj['metaProperties'] = v
+            # the elements in this else are those whose hkpy attribute's name are the same in the hkbase
+            else:
+                jobj[k] = v
 
         jobj['properties'] = jobj['properties'] if 'properties' in jobj else {}
         jobj['metaProperties'] = jobj['metaProperties'] if 'metaProperties' in jobj else {}
