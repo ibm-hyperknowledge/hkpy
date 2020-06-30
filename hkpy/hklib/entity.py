@@ -6,6 +6,8 @@
 from typing import Optional, Union, List, Dict
 
 import json
+
+from hkpy.utils import HKType
 from . import constants
 
 __all__ = ['HKEntity']
@@ -75,21 +77,30 @@ class HKEntity(object):
         """
 
         jobj = {}
-        for k, v in self.__dict__.items():
-            if not v and k not in ['parent', 'children']:
-                continue
-            if k in 'id_':
-                jobj['id'] = v
-            elif k == 'type_':
-                jobj['type'] = v.value
-            elif k == 'class_name':
-                jobj['className'] = v
-            elif k == 'metaproperties':
-                jobj['metaProperties'] = v
-            else:
-                jobj[k] = v
+        
+        jobj['id'] = self.id_
+        jobj['type'] = self.type_.value if isinstance(self.type_, HKType) else self.type_
+        jobj['properties'] = self.properties
+        jobj['metaProperties'] = self.metaproperties
 
-        jobj['properties'] = jobj['properties'] if 'properties' in jobj else {}
-        jobj['metaProperties'] = jobj['metaProperties'] if 'metaProperties' in jobj else {}
+        return jobj
+
+class HKParentedEntity(HKEntity):
+
+    def __init__(self,
+                 type_: Union[constants.HKType, constants.AnchorType],
+                 id_: str,
+                 parent: Optional[str]=None,
+                 properties: Optional[Dict] = {},
+                 metaproperties: Optional[Dict] = {}):
+        from hkpy.hklib import HKContext
+
+        super().__init__(type_, id_, properties=properties, metaproperties=metaproperties)
+        self.parent = parent
+
+    def to_dict(self) -> Dict:
+        jobj = super().to_dict()
+
+        jobj['parent'] = self.parent
 
         return jobj

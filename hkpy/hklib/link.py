@@ -5,6 +5,7 @@
 
 from typing import Union, Optional, Dict, List, TypeVar
 
+from hkpy.hklib.entity import HKParentedEntity
 from . import constants
 from . import HKEntity
 from . import HKAnchor
@@ -15,7 +16,7 @@ __all__ = ['HKLink']
 HKAnyNode = TypeVar('HKAnyNode')
 HKContext = TypeVar('HKContext')
 
-class HKLink(HKEntity):
+class HKLink(HKParentedEntity):
     """
     """
     
@@ -102,3 +103,18 @@ class HKLink(HKEntity):
         """
 
         return self.binds[role]
+
+    def to_dict(self) -> Dict:
+        """ Convert a HKEntity to a dict.
+
+        Returns
+        -------
+        (Dict) The HKEntity's correspondent dict
+        """
+
+        jobj = super().to_dict()
+
+        jobj['connector'] = self.connector
+        jobj['binds'] = self.binds
+
+        return jobj

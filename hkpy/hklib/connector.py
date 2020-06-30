@@ -3,8 +3,9 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict
 
+from hkpy.utils import RoleType
 from . import HKEntity
 from . import constants
 
@@ -51,3 +52,18 @@ class HKConnector(HKEntity):
         else:
             for name, type_ in roles.items():
                 self.roles[name] = type_
+
+    def to_dict(self) -> Dict:
+        """ Convert a HKConnector to a dict
+
+        Returns
+        -------
+        (Dict) The HKConnector's correspondent dict
+        """
+
+        jobj = super().to_dict()
+
+        jobj['className'] = str(self.class_name)
+        jobj['roles'] =  dict((r, (v.value if isinstance(v, RoleType) else v )) for (r, v) in self.roles.items())
+
+        return jobj

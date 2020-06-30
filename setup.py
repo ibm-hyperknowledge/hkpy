@@ -4,6 +4,8 @@
 ###
 
 import os
+
+import setuptools
 from setuptools import setup, find_packages
 
 def find_recursive_packages(root):
@@ -45,7 +47,7 @@ setup(
     author_email=AUTHOR_EMAIL,
     keywords=KEYWORDS,
     python_requires=REQUIRES_PYTHON,
-    packages=find_recursive_packages('hkpy'),
+    packages=setuptools.find_packages(),
     include_package_data=True,
     install_requires=REQUIRED,
     classifiers=[
