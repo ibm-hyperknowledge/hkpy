@@ -6,6 +6,8 @@
 from typing import Optional, Union, List, Dict
 
 import json
+
+from hkpy.utils import HKType
 from . import constants
 
 __all__ = ['HKEntity']
@@ -77,7 +79,7 @@ class HKEntity(object):
         jobj = {}
         
         jobj['id'] = self.id_
-        jobj['type'] = self.type_
+        jobj['type'] = self.type_.value if isinstance(self.type_, HKType) else self.type_
         jobj['properties'] = self.properties
         jobj['metaProperties'] = self.metaproperties
 
