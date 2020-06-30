@@ -4,6 +4,7 @@
 ###
 
 import json
+from collections import Counter
 from typing import TypeVar, Union, Dict
 
 from hkpy import hkfy
@@ -121,11 +122,12 @@ class HKOConjunctionExpression(HKOConceptExpression):
 
 
     def __eq__(self, o: object) -> bool:
-        return isinstance(o, HKOConjunctionExpression) and o.concepts == self.concepts
+        return isinstance(o, HKOConjunctionExpression) and Counter(o.concepts) == Counter(self.concepts)
 
 
     def __hash__(self) -> int:
-        return hash(hash(HKOConjunctionExpression) + hash(self.concepts))
+        #TODO: check if self.concepts should be changed to a set implementation
+        return hash(hash(HKOConjunctionExpression) + sum(hash(e) for e in self.concepts))
 
 
 class HKODisjunctionExpression(HKOConceptExpression):
@@ -138,11 +140,12 @@ class HKODisjunctionExpression(HKOConceptExpression):
         return f"""(or {' '.join(map(lambda x : str(x), self.concepts))})"""
 
     def __eq__(self, o: object) -> bool:
-        return isinstance(o, HKODisjunctionExpression) and o.concepts == self.concepts
+        return isinstance(o, HKODisjunctionExpression) and Counter(o.concepts) == Counter(self.concepts)
 
 
     def __hash__(self) -> int:
-        return hash(hash(HKODisjunctionExpression) + hash(self.concepts))
+        #TODO: check if self.concepts should be changed to a set implementation
+        return hash(hash(HKODisjunctionExpression) + sum(hash(e) for e in self.concepts))
 
 class HKOConceptNegationExpression(HKOConceptExpression):
 
