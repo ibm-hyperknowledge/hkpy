@@ -11,6 +11,9 @@ from hkpy.hkpyo.converters.HKOReaderHKG import HKOContextExpandable
 from hkpy.hkpyo.converters.utils import encode_iri, decode_iri
 
 from hkpy.hkpyo.model import *
+from hkpy.hkpyo.model.base_entities import TOP_CONTEXT
+from hkpy.hkpyo.model.hko_context_builder import HKOContextBuilder
+from hkpy.hkpyo.model.hko_context_manager import HKOContextManager
 
 HKOContextManagerHKB = TypeVar('HKOContextManagerHKB')
 

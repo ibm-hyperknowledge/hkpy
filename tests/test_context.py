@@ -8,7 +8,6 @@ from hkpy.hkbase import HKBase
 
 from hkpy.hkpyo.hkb import hkbo_simple, load_HKOContext_from_hkb
 from hkpy.hkpyo.hkb.hkbo import HKOContextManagerHKB
-from hkpy.hkpyo.model import HKOContextManager
 
 
 

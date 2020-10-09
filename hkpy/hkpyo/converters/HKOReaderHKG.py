@@ -3,12 +3,15 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 
-from hkpy.hklib import HKLink, HKEntity, HKNode, HKContext, HKReferenceNode, HKConnector
+from hkpy.hklib import HKLink, HKEntity, HKNode, HKContext, HKReferenceNode, HKConnector, hkfy
+from hkpy.hkpyo.converters.HKOWriterHKG import HKOINDIVIDUAL_NODE
 
-from hkpy.hkpyo.converters.utils import decode_contextualized_iri_individual_node, decode_contextualized_iri_property_node, decode_iri, \
-    encode_iri
+from hkpy.hkpyo.converters.utils import decode_contextualized_iri_individual_node, \
+    decode_contextualized_iri_property_node, decode_iri, \
+    encode_iri, decode_contextualized_iri_concept_node
 from hkpy.hkpyo.converters.constants import *
 from hkpy.hkpyo.model import *
+from hkpy.hkpyo.model.hko_context_builder import HKOContextBuilder
 
 HKOCONCEPT_NODE = HKNode(id_=encode_iri(CONCEPT_IRI))
 HKOPROPERTY_NODE = HKNode(id_=encode_iri(PROPERTY_IRI))
@@ -22,6 +25,22 @@ class HKOContextExpandable(HKOContext):
     def __init__(self, iri: str):
         super().__init__(iri, None)
 
+# parsing kit object to pass along parsing functions. It is also called parsing context in some implementations
+class ParsingKit:
+
+    def __init__(self):
+        self.cb: HKOContextBuilder = None
+        self.hkg_entities = {}
+        self.loaded_axioms = []
+        self.hke_index = {}
+        self.tbox: Dict[str, HKOElement] = {}
+        self.abox: Dict[str, HKOElement] = {}
+        self.expressions: Dict[str, HKLink] = {} # map blank node -> concept expressions
+        self.expecting_tbox_nodes = False # control for punning
+        self.state_stack = []
+
+    def get_HKNode(self, id_):
+        return self.hke_index.get(id_, HKNode(id_))
 
 class HKOReaderHKG:
 
@@ -43,12 +62,16 @@ class HKOReaderHKG:
                 #     parsing_kit.tbox[hko_meta_concept.iri] = hko_meta_concept
 
                 if cnode.id_ == HKOCONCEPT_NODE.id_:
-                    hko_concept = parsing_kit.cb.getHKOConcept(decode_iri(inode.id_))
+                    hko_concept = parsing_kit.cb.getHKOConcept(str(IFI(inode.id_).artifact_or_fragment))
                     parsing_kit.tbox[hko_concept.iri] = hko_concept
                     to_remove.add(e)
                 elif cnode.id_ == HKOPROPERTY_NODE.id_:
-                    hko_property = parsing_kit.cb.getHKOProperty(decode_iri(inode.id_))
+                    hko_property = parsing_kit.cb.getHKOProperty(str(IFI(inode.id_).artifact_or_fragment))
                     parsing_kit.tbox[hko_property.iri] = hko_property
+                    to_remove.add(e)
+                elif cnode.id_ == HKOINDIVIDUAL_NODE.id_:
+                    hko_individual = parsing_kit.cb.getHKOIndividual(str(IFI(inode.id_).artifact_or_fragment))
+                    parsing_kit.tbox[hko_individual.iri] = hko_individual
                     to_remove.add(e)
 
                 # else:
@@ -81,12 +104,21 @@ class HKOReaderHKG:
         else:
             return self._readHKONamedConcept(e, parsing_kit)
 
-    def _readHKONamedConcept(self, e: HKNode, parsing_kit):
+    def _readHKONamedConcept(self, e: HKReferenceNode, parsing_kit):
         if e.id_ in parsing_kit.tbox:
             return parsing_kit.tbox[e.id_]
         else:
-            hkoc_concept = parsing_kit.cb.getHKOConcept(decode_iri(e.id_))
-            parsing_kit.tbox[e.id_] = hkoc_concept
+            ifi = IFI(e.id_)
+
+            if ifi.fragment is None:
+                #TODO: this might be fixed if we replace context/iri by ifi in hkpyo
+                hkoc_concept = parsing_kit.cb.getHKOConcept(str(ifi.artifact))
+                parsing_kit.tbox[e.id_] = hkoc_concept
+            else:
+                context = parsing_kit.mgr.getHKOContext(str(ifi.artifact))
+                hkoc_concept = parsing_kit.mgr.getHKOContextBuilder(context).getHKOConcept(str(ifi.fragment))
+                parsing_kit.tbox[e.id_] = hkoc_concept
+
             return hkoc_concept
 
     def _readHKOProperty(self, e: HKReferenceNode, parsing_kit):
@@ -321,11 +353,11 @@ class HKOReaderHKG:
             self._readRouter(e, parsing_kit)
 
 
-    def readHKOintoContextFromHKGJson(self, json_entities : [Dict], context_builder: HKOContextBuilder):
+    def readHKOintoContextFromHKGJson(self, json_entities : [Dict], context: HKOContext):
         hkentities = list(hkfy(e) for e in json_entities)
-        self.readHKOintoContext(hkentities, context_builder)
+        self.readHKOintoContext(hkentities, context)
 
-    def readHKOintoContext(self, hkg_context_graph: [HKEntity], context_builder: HKOContextBuilder):
+    def readHKOintoContext(self, hkg_context_graph: [HKEntity], context : HKOContext):
         """
 
         Parses HK graph into an HKO model. It is a two-passes algorithm. First, it preprocesses the graph indexing
@@ -342,27 +374,11 @@ class HKOReaderHKG:
         for e in hkg_context_graph:
             index_hkg_entities[e.id_] = e
 
-        # parsing kit object to pass along parsing functions. It is also called parsing context in some implementations
-        class ParsinKit:
 
-            def __init__(self):
-                self.cb: HKOContextBuilder = None
-                self.hkg_entities = {}
-                self.loaded_axioms = []
-                self.hke_index = {}
-                self.tbox: Dict[str, HKOElement] = {}
-                self.abox: Dict[str, HKOElement] = {}
-                self.expressions: Dict[str, HKLink] = {} # map blank node -> concept expressions
-                self.expecting_tbox_nodes = False # control for punning
-                self.state_stack = []
-
-            def get_HKNode(self, id_):
-                return self.hke_index.get(id_, HKNode(id_))
-
-
-
-        parsing_kit = ParsinKit()
-        parsing_kit.cb = context_builder
+        parsing_kit = ParsingKit()
+        from hkpy.hkpyo import HKOContextManager
+        parsing_kit.mgr = HKOContextManager.get_global_context_manager()
+        parsing_kit.cb = parsing_kit.mgr.getHKOContextBuilder(context)
         parsing_kit.hkg_entities = hkg_context_graph
         parsing_kit.hke_index = index_hkg_entities
         parsing_kit.loaded_axioms = []

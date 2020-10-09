@@ -5,9 +5,8 @@
 
 from hkpy.hkbase import HKBase
 
-from hkpy.hkpyo.hkb import hkbo_simple, load_HKOContext_from_hkb
+from hkpy.hkpyo.hkb import hkbo_simple, load_HKOContext_from_hkb, HKOContextManager
 from hkpy.hkpyo.hkb.hkbo import HKOContextManagerHKB
-from hkpy.hkpyo.model import HKOContextManager
 
 
 def test_save_to_file():
@@ -120,15 +119,15 @@ test_save_to_file()
 test_load_from_file()
 
 print()
-
-print('Testing saving and loading from hkb:')
-test_save_to_hkb()
-test_load_from_hkb()
-
-print()
-
-print('Testing saving and loading from hkb:')
-test_save_to_hkb_simple()
-test_load_from_hkb_simple()
+#
+# print('Testing saving and loading from hkb:')
+# test_save_to_hkb()
+# test_load_from_hkb()
+#
+# print()
+#
+# print('Testing saving and loading from hkb:')
+# test_save_to_hkb_simple()
+# test_load_from_hkb_simple()
 
 print()

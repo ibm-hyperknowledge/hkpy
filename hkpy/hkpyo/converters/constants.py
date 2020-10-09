@@ -12,7 +12,8 @@ NEGATION_CONNECTOR = 'not'
 SUBCONCEPTOF_CONNECTOR = 'subConceptOf'
 EQCONCEPT_CONNECTOR = 'eqConceptTo'
 
-INSTANCEOF_CONNECTOR = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+INSTANCEOF_CONNECTOR = 'instaceOf'
+CONTEXT_IMPORT_CONNECTOR = 'importContext'
 
 HK_BIND_ARG_1 = 'subject'
 HK_BIND_ARG_2 = 'object'

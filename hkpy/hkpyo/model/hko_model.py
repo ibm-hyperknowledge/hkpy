@@ -5,27 +5,24 @@
 
 import json
 from collections import Counter
-from typing import TypeVar, Union, Dict
+from typing import TypeVar, Union, Dict, List, Set
 
-from hkpy import hkfy
-
+from hkpy.hkpyo.model.ifi import IFI, IRI
 
 CONCEPT_IRI = "http://brl.ibm.com/ontologies/hko#Concept"
 PROPERTY_IRI = "http://brl.ibm.com/ontologies/hko#Property"
 INDIVIDUAL_IRI = "http://brl.ibm.com/ontologies/hko#Individual"
 
 
-#TOP_CONTEXT_IRI = "http://brl.ibm.com/ontology/hko$Everything"
-TOP_CONTEXT_IRI = None
 TOP_CONCEPT_IRI = "http://brl.ibm.com/ontologies/hko#Entity"
 TOP_PROPERTY_IRI = "http://brl.ibm.com/ontologies/hko#property"
 
+
 HKOContext = TypeVar('HKOContext')
 HKOProperty = TypeVar('HKOProperty')
-HKOContextManager = TypeVar("HKOContextManager")
+HKONamedElement = TypeVar('HKONamedElement')
 
 HKOLiteral = TypeVar('Union[str,int,float]')
-
 
 HKO_NUMBER_DATATYPE = "http://brl.ibm.com/ontologies/hko#Number"
 HKO_STRING_DATATYPE = "http://brl.ibm.com/ontologies/hko#String"
@@ -42,18 +39,31 @@ class HKOContextElement(HKOElement):
 
     def __init__(self, context: HKOContext) -> None:
         super().__init__()
+        if context is None: raise Exception('Context cannot be None. Use top context instead.')
         self.context = context
 
 
 class HKONamedElement(HKOContextElement):
-    """All named elements are contextualized """
+    """All named elements are contextualized. IRIs are used to identify named elements, while IFI is used to identify
+    the element in context, so that, in general ifi = context.iri # iri
+
+    """
 
     def __init__(self, iri: str, context: HKOContext) -> None:
-        super().__init__(context=context)
-        self.iri = iri
+        self.iri = IRI(iri)
+        from hkpy.hkpyo.model.base_entities import TOP_CONTEXT_IRI
+        if iri == TOP_CONTEXT_IRI:
+            #top concept is treated differently, as it has no parent context
+            self.ifi = IFI(f"<{self.iri.__str__()}>")
+            self.context = None
+        else:
+            super().__init__(context=context)
+            iri = self.iri.__str__() if self.iri[0] == '<' and self.iri[-1] == '>' else f"<{self.iri.__str__()}>"
+            self.ifi = IFI(context.ifi, iri)
 
     def __str__(self) -> str:
-        return self.iri
+        return str(self.ifi)
+
 
     #do not add hash and eq.
 
@@ -70,12 +80,12 @@ class HKOConcept(HKOConceptExpression, HKONamedElement):
     def __eq__(self, o: object) -> bool:
         if isinstance(o, HKOConcept):
             #it might happen that the same iri can identify concepts/properties and individuals
-            return self.iri == o.iri
+            return self.ifi == o.ifi
         else:
             return super().__eq__(o)
 
     def __hash__(self) -> int:
-        return hash(str(HKOConcept)+self.iri)
+        return hash(str(HKOConcept)+str(self.ifi))
 
 
 class HKOExistsExpression(HKOConceptExpression):
@@ -176,12 +186,12 @@ class HKOIndividual(HKONamedElement):
     def __eq__(self, o: object) -> bool:
         if isinstance(o, HKOIndividual):
             #it might happen that the same iri can identify concepts/properties and individuals
-            return self.iri == o.iri
+            return self.ifi == o.ifi
         else:
             return super().__eq__(o)
 
     def __hash__(self) -> int:
-        return hash(str(HKOIndividual)+self.iri)
+        return hash(str(HKOIndividual)+self.ifi)
 
 
 class HKOProperty(HKONamedElement):
@@ -189,18 +199,15 @@ class HKOProperty(HKONamedElement):
     def __init__(self, iri: str, context: HKOContext):
         HKONamedElement.__init__(self, iri, context)
 
-    def __str__(self) -> str:
-        return self.iri
-
     def __eq__(self, o: object) -> bool:
         if isinstance(o, HKOProperty):
             #it might happen that the same iri can identify concepts/properties and individuals
-            return self.iri == o.iri
+            return self.ifi == o.ifi
         else:
             return super().__eq__(o)
 
     def __hash__(self) -> int:
-        return hash(str(HKOProperty)+self.iri)
+        return hash(str(HKOProperty)+str(self.ifi))
 
 
 # class HKORoleExpression(HKOPropertyExpression) :
@@ -322,150 +329,54 @@ class HKOPropertyAssertion(HKOAssertion):
                     + self.arg1.__hash__()
                     + self.arg2.__hash__())
 
+class HKOImportContextAssertion(HKOAxiom):
+
+    def __init__(self, context: HKOContext, sub: HKOContext, sup: HKOContext):
+        super().__init__(context)
+        self.sub = sub
+        self.sup = sup
+
+    def __str__(self) -> str:
+        return f"""(import {self.sub} {self.sup})"""
+
+    def __eq__(self, o: object) -> bool:
+        return isinstance(o, HKOImportContextAssertion) and o.context == self.context and o.sub == self.sub and o.sup == self.sup
+
+    def __hash__(self) -> int:
+        return hash(hash(HKOImportContextAssertion) + hash(self.context) + hash(self.sub)+ hash(self.sup))
+
 
 class HKOContext(HKONamedElement):
 
-    def __init__(self, iri: str, context: HKOContext, *elements: HKOElement):
+    def __init__(self, iri: IFI, context: HKOContext, children_contexts : Set[HKOElement] = None,  *elements: HKOElement):
         super().__init__(iri, context)
-        self.elements = list(elements)
+        self._elements = set(elements)
+
+    @property
+    def elements(self):
+        return self._elements
+
+    @elements.setter
+    def elements(self, v : Set[HKOElement]):
+        if not isinstance(v, set) : raise TypeError()
+        self._elements = v
+
+    def add_axiom(self, axiom : HKOAxiom):
+        self._elements.add(axiom)
+
+    def add_assertion(self, assertion : HKOAssertion):
+        self._elements.add(assertion)
 
     def __eq__(self, o: object) -> bool:
         #simple implementation
-        return isinstance(o, HKOContext) and o.iri == self.iri
+        return isinstance(o, HKOContext) and o.ifi == self.ifi
 
     def __hash__(self) -> int:
-        return hash(str(HKOContext) + self.iri)
-
-    def addAxiom(self, axiom: HKOAxiom):
-        self.elements.append(axiom)
-
-    def axioms(self):
-        return self.elements
-
-    def addAssertion(self, assertion: HKOAxiom):
-        self.elements.append(assertion)
+        return hash(str(HKOContext) + str(self.ifi))
 
     def __str__(self) -> str:
         str_elements = ',\n'.join(map(lambda x : str(x), self.elements))
-        return f"""{self.iri}:[ {str_elements} ]"""
-
-TOP_CONTEXT: HKOContext = HKOContext(TOP_CONTEXT_IRI, None)
-
-class HKOContextBuilder:
-
-    def __init__(self, context):
-        self.context = context
-
-    def getHKOConcept(self, iri: str) -> HKOConcept:
-        return HKOConcept(iri, self.context)
-
-    def getHKOProperty(self, iri: str) -> HKOProperty:
-        return HKOProperty(iri, self.context)
-
-    def getHKOExistsExpression(self, property: HKOProperty, concept: HKOConceptExpression) -> HKOExistsExpression:
-        return HKOExistsExpression(property, concept)
-
-    def getHKOForallExpression(self, property: HKOProperty, concept: HKOConceptExpression) -> HKOExistsExpression:
-        return HKOForallExpression(property, concept)
-
-    def getHKOConjunctionExpression(self, *concepts: HKOConceptExpression) -> HKOConjunctionExpression:
-        return HKOConjunctionExpression(*concepts)
-
-    def getHKODisjunctionExpression(self, *concepts: HKOConceptExpression) -> HKODisjunctionExpression:
-        return HKODisjunctionExpression(*concepts)
-
-    def getHKOConceptNegationExpression(self, concept: HKOConceptExpression) -> HKOConceptNegationExpression:
-        return HKOConceptNegationExpression(concept)
-
-    def getHKOSubConceptAxiom(self, sub: HKOConcept, sup: HKOConceptExpression) -> HKOSubConceptAxiom:
-        return HKOSubConceptAxiom(self.context, sub, sup)
-
-    def getHKOEquivalentConceptAxiom(self, conceptA: HKOConcept,
-                                    conceptB: HKOConceptExpression) -> HKOEquivalentConceptAxiom:
-        return HKOEquivalentConceptAxiom(self.context, conceptA, conceptB)
-
-    def getHKOIndividual(self, iri) -> HKOIndividual:
-        return HKOIndividual(iri, self.context)
-
-    def getHKOConceptAssertion(self, concept : HKOConceptExpression, individual : HKOIndividual) -> HKOConceptAssertion:
-        return HKOConceptAssertion(self.context, concept, individual)
-
-    def getHKOPropertyAssertion(self, property: HKOProperty, arg1: HKOIndividual, arg2: Union[HKOIndividual, str, int, float]):
-        return HKOPropertyAssertion(self.context, property, arg1, arg2)
+        return f"""{self.ifi}:[ {str_elements} ]"""
 
 
 
-class HKOContextManager:
-
-    _manager_singleton : HKOContextManager = None
-
-    def __init__(self):
-        self.loaded_contexts: Dict[str, HKOContext] = {}
-
-
-    def get_global_context_manager() -> HKOContextManager:
-        if not HKOContextManager._manager_singleton:
-            HKOContextManager._manager = HKOContextManager()
-        return HKOContextManager._manager
-
-    def getHKOContext(self, iri: str, parent: Union[str,HKOContext] = TOP_CONTEXT) -> HKOContext:
-        if iri not in self.loaded_contexts:
-            return None
-
-        context = HKOContext(iri, parent)
-        return context
-
-    def createHKOContext(self, iri: str, parent: Union[str,HKOContext] = TOP_CONTEXT) -> HKOContext:
-        if iri in self.loaded_contexts:
-            raise Exception('Existing context already loaded.')
-
-        context = HKOContext(iri, parent)
-        self.loaded_contexts[iri] = context
-        return context
-
-    def getHKOContextBuilder(self, context=TOP_CONTEXT) -> HKOContextBuilder:
-        return HKOContextBuilder(context=context)
-
-    def addAxiom(self, context: HKOContext, *axioms: HKOAxiom) -> None:
-        for axiom in axioms : axiom.context = context
-        context.elements.extend(axioms)
-
-    def addAssertion(self, context: HKOContext, *assertions: HKOAxiom) -> None:
-        for assertion in assertions: assertion.context = context
-        context.elements.extend(assertions)
-
-    def saveHKOContextToFile(self, context : HKOContext, file_path : str):
-        with open(file_path, mode="w") as f:
-            from hkpy.hkpyo.converters.HKOWriterHKG import HKOWriterHKG
-            writer = HKOWriterHKG()
-            entities = writer.writeHKOContext(context)
-            buffer = {}
-            for x in entities:
-                buffer[x.id_] = x.to_dict()
-            json_entities = list(buffer.values())
-            f.write(json.dumps(json_entities))
-
-    def readHKOContextFromFile(self, context_iri : str, file_path : str) -> HKOContext:
-        with open(file_path, mode="r") as f:
-            file_data = f.read()
-            file_data_json = json.loads(file_data)
-
-            hkg_graph = {}
-            for e in file_data_json:
-                hke = hkfy(e)
-                hkg_graph[hke.id_] = hke
-
-            hkg_context = hkg_graph.get('<' + context_iri + '>', None)
-            del hkg_graph[hkg_context.id_]
-
-            if hkg_context is None:
-                raise Exception('Context iri is not present in the file.')
-
-            from hkpy.hkpyo.converters.HKOReaderHKG import HKOContextExpandable
-            hko_pcontext = HKOContext(hkg_context.id_[1:-1], HKOContextExpandable(iri=hkg_context.parent))
-
-            from hkpy.hkpyo.converters.HKOReaderHKG import HKOReaderHKG
-            reader = HKOReaderHKG()
-            reader.readHKOintoContextFromHKGJson(file_data_json, self.getHKOContextBuilder(hko_pcontext))
-
-            return hko_pcontext

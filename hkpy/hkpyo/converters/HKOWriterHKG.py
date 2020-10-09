@@ -4,22 +4,41 @@
 ###
 
 import uuid
+from queue import SimpleQueue
 from typing import Dict, Set
 
 from hkpy.hklib import HKEntity, HKNode, HKLink, HKContext, HKConnector, HKReferenceNode
 from hkpy.hklib import HKAnyNode
 from hkpy.utils import ConnectorType, RoleType
 
-from hkpy.hkpyo.converters.utils import encode_contextualized_iri_individual_node, encode_contextualized_iri_property_node, encode_iri, \
-    decode_iri
+from hkpy.hkpyo.converters.utils import encode_contextualized_iri_individual_node, \
+    encode_contextualized_iri_property_node, encode_iri, \
+    decode_iri, encode_contextualized_iri_concept_node, encode_ifi_as_hk_id
+
 from hkpy.hkpyo.converters.constants import *
 from hkpy.hkpyo.model import *
 
 HKOCONCEPT_NODE = HKNode(id_=encode_iri(CONCEPT_IRI))
-HKOPROPERTY_REF_NODE = HKReferenceNode(id_="ref-to-" + PROPERTY_IRI, ref=PROPERTY_IRI)
+HKOPROPERTY_NODE = HKNode(id_=encode_iri(PROPERTY_IRI))
+HKOINDIVIDUAL_NODE = HKNode(id_=encode_iri(INDIVIDUAL_IRI))
 
-HKO_TOP_NODE = HKNode(id_=encode_iri(TOP_CONCEPT_IRI))
 
+#HKO_TOP_NODE = HKI(id_=encode_iri(TOP_CONCEPT_IRI))
+
+
+class SerializingKit:
+
+    def __init__(self):
+
+        self.writtenHkG: [HKEntity] = []
+        self.writtenHkO: Set[HKEntity] = set()
+        self.writtenNamedElements: Set[HKEntity] = set()
+        self.mapConceptExpressionToHkg: Dict[HKOConceptExpression, HKEntity] = {}
+        self.mapPropertyToHkg: Dict[HKOProperty, HKEntity] = {}
+        self.mapIndividualToHkg: Dict[HKOIndividual, HKEntity] = {}
+        self.mapContextToHkg: Dict[HKOContext, HKEntity] = {}
+        self.context_stack = [HKOContext]
+        self.contexts_to_write:  SimpleQueue = SimpleQueue()
 
 class HKOWriterHKG:
     #  context: HKContext | null= null
@@ -29,10 +48,8 @@ class HKOWriterHKG:
     #  setContext(context: HKContext) :
     #     self.context = context
 
-    def create_instaceof_link(self, individual: HKNode, concept: HKNode, parent: HKContext = None) -> HKLink:
-        assert (isinstance(individual, HKAnyNode))
-        assert (isinstance(concept, HKAnyNode))
-        assert (isinstance(parent, HKContext))
+    def create_instaceof_link(self, individual: HKNode, concept: HKNode, parent: str = None) -> HKLink:
+
 
         hk_link = HKLink(
             id_=INSTANCEOF_CONNECTOR + '-' + str(uuid.uuid4()),
@@ -71,6 +88,10 @@ class HKOWriterHKG:
         connectors[DISJUNCTION_CONNECTOR] = HKConnector(id_=DISJUNCTION_CONNECTOR, class_name=ConnectorType.FACTS,
                                                         roles={"head_concept": RoleType.SUBJECT,
                                                                'concepts': RoleType.OBJECT})
+        connectors[CONTEXT_IMPORT_CONNECTOR] = HKConnector(id_=CONTEXT_IMPORT_CONNECTOR, class_name=ConnectorType.FACTS,
+                                                        roles={"sub": RoleType.SUBJECT,
+                                                               'sup': RoleType.OBJECT})
+
         # connectors[NOT_CONNECTOR] = HKConnector(id_=NOT_CONNECTOR, class_name=ConnectorType.FACTS,
         #                                                 roles={"head_concept": RoleType.SUBJECT,
         #                                                        'concepts': RoleType.OBJECT})
@@ -90,75 +111,87 @@ class HKOWriterHKG:
         if e in serializing_kit.writtenNamedElements:
             return # already written
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
+        self._writeRouter(e.context, serializing_kit)
+        econtext = serializing_kit.mapContextToHkg.get(e.context)
 
         hkg: HKNode = HKNode(
-            id_=encode_iri(e.iri) #,
-            #parent=currentContext.id_
+            id_=encode_iri(e.iri)
         )
 
-        hkg_meta_link = self.create_instaceof_link(hkg, HKOCONCEPT_NODE, currentContext)
+        hkg_ref = HKReferenceNode(
+            # id_=encode_iri(encode_contextualized_iri_concept_node(e, econtext.id_)),
+            id_=encode_ifi_as_hk_id(e.ifi),
+            ref=encode_ifi_as_hk_id(e.ifi.fragment),
+            parent=encode_ifi_as_hk_id(e.ifi.artifact)
+        )
+
+        hkg_meta_link = self.create_instaceof_link(hkg, HKOCONCEPT_NODE, econtext.id_)
+        hkg_meta_link_ref = self.create_instaceof_link(hkg_ref, HKOCONCEPT_NODE, econtext.id_)
 
         serializing_kit.mapConceptExpressionToHkg[e] = hkg
 
-        serializing_kit.writtenHkG += [hkg, hkg_meta_link, HKOCONCEPT_NODE]
-        serializing_kit.writtenHkG += [hkg]
+        serializing_kit.writtenHkG += [hkg, hkg_ref, hkg_meta_link, HKOCONCEPT_NODE, hkg_meta_link_ref]
         serializing_kit.writtenNamedElements.add(e)
-        # self.mapNodesToHKElements.set(hkg, e)
 
     def _writeHKOProperty(self, e: HKOProperty, serializing_kit) -> None:
         if e in serializing_kit.writtenNamedElements:
             return  # already written
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
+        self._writeRouter(e.context, serializing_kit)
+        econtext = serializing_kit.mapContextToHkg.get(e.context)
 
-        hkg_ref = HKReferenceNode(
-            id_=encode_iri(encode_contextualized_iri_property_node(e, decode_iri(currentContext.id_))),
-            ref=encode_iri(e.iri),
-            parent=currentContext.id_,
+        hkg: HKNode = HKNode(
+            id_=encode_iri(e.iri)
         )
 
-        #hkg_meta_link = self.create_instaceof_link(hkg_ref, HKOPROPERTY_REF_NODE, currentContext)
+        hkg_ref = HKReferenceNode(
+            id_=encode_iri(encode_contextualized_iri_property_node(e, decode_iri(econtext.id_))),
+            ref=encode_iri(e.iri),
+            parent=econtext.id_,
+        )
+
+        hkg_meta_link = self.create_instaceof_link(hkg, HKOPROPERTY_NODE, econtext.id_)
+        hkg_meta_link_ref = self.create_instaceof_link(hkg_ref, HKOPROPERTY_NODE, econtext.id_)
 
         serializing_kit.mapPropertyToHkg[e] = hkg_ref
 
-        #serializing_kit.writtenHkG += [hkg_ref, hkg_meta_link, HKOPROPERTY_REF_NODE]
-        serializing_kit.writtenHkG += [hkg_ref]
+        serializing_kit.writtenHkG += [hkg_ref, hkg_meta_link, hkg_meta_link_ref, HKOPROPERTY_NODE]
         serializing_kit.writtenNamedElements.add(e)
-        # self.mapNodesToHKElements.set(hkg, e)
 
-    def _writeHKOIndividual(self, e: HKOIndividual, serializing_kit) -> None:
+    def _writeHKOIndividual(self, e: HKOIndividual, serializing_kit: SerializingKit) -> None:
         if e in serializing_kit.writtenNamedElements:
             return  # already written
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
+        self._writeRouter(e.context, serializing_kit)
+        econtext = serializing_kit.mapContextToHkg.get(e.context)
 
-        hkg: HKReferenceNode = HKReferenceNode(
-            id_=encode_iri(encode_contextualized_iri_property_node(e, decode_iri(currentContext.id_))),
-            ref = encode_iri(e.iri),
-            parent=currentContext.id_
+        hkg: HKNode = HKNode(
+            id_=encode_iri(e.iri)
         )
 
-        #hkg_meta_link = self.create_instaceof_link(hkg, HKO_TOP_NODE, currentContext)  # this is probably not needed
+        hkg_ref: HKReferenceNode = HKReferenceNode(
+            id_=encode_iri(encode_contextualized_iri_individual_node(e, decode_iri(econtext.id_))),
+            ref = encode_iri(e.iri),
+            parent=econtext.id_
+        )
 
-        serializing_kit.mapIndividualToHkg[e] = hkg
+        hkg_meta_link = self.create_instaceof_link(hkg, HKOINDIVIDUAL_NODE, econtext.id_)
+        hkg_meta_link_ref = self.create_instaceof_link(hkg_ref, HKOINDIVIDUAL_NODE, econtext.id_)
 
-        #serializing_kit.writtenHkG += [hkg] #, hkg_meta_link, HKO_TOP_NODE]
-        serializing_kit.writtenHkG += [hkg]
+        serializing_kit.mapIndividualToHkg[e] = hkg_meta_link_ref
+
+        serializing_kit.writtenHkG += [hkg, hkg_meta_link, hkg_meta_link_ref, HKOINDIVIDUAL_NODE]
         serializing_kit.writtenNamedElements.add(e)
-        # self.mapNodesToHKElements.set(hkg, e)
 
-    def _writeHKOExistsExpression(self, e: HKOExistsExpression, serializing_kit) -> None:
+    def _writeHKOExistsExpression(self, e: HKOExistsExpression, serializing_kit : SerializingKit) -> None:
         if e in serializing_kit.writtenHkO:
             return None  # already written
 
-        # self._writeRouter(e.context)
         self._writeRouter(e.property, serializing_kit)
         self._writeRouter(e.concept, serializing_kit)
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
+        econtext = serializing_kit.mapContextToHkg.get(serializing_kit.context_stack[-1])
 
-        # context_g = serializing_kit.mapContextToHkg.get(e.context)
         property_g = serializing_kit.mapPropertyToHkg.get(e.property)
         concept_g = serializing_kit.mapConceptExpressionToHkg.get(e.concept)
 
@@ -166,13 +199,13 @@ class HKOWriterHKG:
 
         hkg_node: HKNode = HKNode(
             id_="_:" + blank_node_id,
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link: HKLink = HKLink(
             id_=EXISTS_CONNECTOR + '-' + blank_node_id,
             connector=EXISTS_CONNECTOR,
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link.add_bind('head_concept', hkg_node.id_)
@@ -193,7 +226,7 @@ class HKOWriterHKG:
         for c in e.concepts:
             self._writeRouter(c, serializing_kit)
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
+        econtext = serializing_kit.mapContextToHkg.get(serializing_kit.context_stack[-1])
 
         concepts_g: [HKNode] = []
         for c in e.concepts:
@@ -203,13 +236,13 @@ class HKOWriterHKG:
 
         hkg_node: HKNode = HKNode(
             id_="_:" + blank_node_id,
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link: HKLink = HKLink(
             id_= "_:" + blank_node_id,
             connector=CONJUNCTION_CONNECTOR,
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link.add_bind('head_concept', hkg_node.id_)
@@ -224,14 +257,14 @@ class HKOWriterHKG:
         serializing_kit.writtenHkO.add(e)
         # self.mapNodesToHKElements.set(hkg, e)
 
-    def _writeHKODisjunctionExpression(self, e: HKODisjunctionExpression, serializing_kit) -> None:
+    def _writeHKODisjunctionExpression(self, e: HKODisjunctionExpression, serializing_kit : SerializingKit) -> None:
         if e in serializing_kit.writtenHkO:
             return None  # already written
 
         for c in e.concepts:
             self._writeRouter(c, serializing_kit)
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
+        econtext = serializing_kit.mapContextToHkg.get(serializing_kit.context_stack[-1])
 
         concepts_g: [HKNode] = []
         for c in e.concepts:
@@ -241,13 +274,13 @@ class HKOWriterHKG:
 
         hkg_node: HKNode = HKNode(
             id_="_:" + blank_node_id,
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link: HKLink = HKLink(
             id_="_:" + blank_node_id,
             connector=DISJUNCTION_CONNECTOR,
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link.add_bind('head_concept', hkg_node.id)
@@ -262,24 +295,21 @@ class HKOWriterHKG:
         serializing_kit.writtenHkO.add(e)
         # self.mapNodesToHKElements.set(hkg, e)
 
-    def _writeHKOSubConceptAxiom(self, e: HKOSubConceptAxiom, serializing_kit) -> None:
+    def _writeHKOSubConceptAxiom(self, e: HKOSubConceptAxiom, serializing_kit : SerializingKit) -> None:
         if e in serializing_kit.writtenHkO:
             return None  # already written
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
-
-        # self.stateStack.append({'context': e.context})
         self._writeRouter(e.sub, serializing_kit)
         self._writeRouter(e.sup, serializing_kit)
-        # self.stateStack.pop()
 
         esub = serializing_kit.mapConceptExpressionToHkg.get(e.sub)
         esup = serializing_kit.mapConceptExpressionToHkg.get(e.sup)
+        econtext = serializing_kit.mapContextToHkg.get(e.context)
 
         hkg_link: HKLink = HKLink(
             id_=SUBCONCEPTOF_CONNECTOR + '-' + str(uuid.uuid4()),
             connector=SUBCONCEPTOF_CONNECTOR,
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link.add_bind('sub', esub.id_)
@@ -293,20 +323,17 @@ class HKOWriterHKG:
         if e in serializing_kit.writtenHkO:
             return None  # already written
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
-
-        # self.state_stack.append({'context': e.context})
         self._writeRouter(e.conceptA, serializing_kit)
         self._writeRouter(e.conceptB, serializing_kit)
-        # self.state_stack.pop()
 
         ecA = serializing_kit.mapConceptExpressionToHkg.get(e.conceptA)
         ecB = serializing_kit.mapConceptExpressionToHkg.get(e.conceptB)
+        econtext = serializing_kit.mapConceptExpressionToHkg.get(e.context)
 
         hkg_link: HKLink = HKLink(
             id_=EQCONCEPT_CONNECTOR + '-' + str(uuid.uuid4()),
             connector=EQCONCEPT_CONNECTOR,
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link.add_bind('left', ecA.id_)
@@ -320,20 +347,18 @@ class HKOWriterHKG:
         if e in serializing_kit.writtenHkO:
             return None  # already written
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
 
-        # self.state_stack.append({'context': e.context})
         self._writeRouter(e.concept, serializing_kit)
         self._writeRouter(e.individual, serializing_kit)
-        # self.state_stack.pop()
 
         hkg_concept = serializing_kit.mapConceptExpressionToHkg.get(e.concept)
         hkg_individual = serializing_kit.mapIndividualToHkg.get(e.individual)
+        econtext = serializing_kit.mapContextToHkg.get(e.context)
 
         hkg_link: HKLink = HKLink(
             id_=INSTANCEOF_CONNECTOR + '-' + str(uuid.uuid4()),
             connector=encode_iri(INSTANCEOF_CONNECTOR),
-            parent=currentContext.id_,
+            parent=econtext.id_,
         )
 
         hkg_link.add_bind('object', hkg_concept.id_)
@@ -347,9 +372,7 @@ class HKOWriterHKG:
         if e in serializing_kit.writtenHkO:
             return None  # already written
 
-        currentContext: HKContext = serializing_kit.state_stack[-1]['context']
 
-        # self.state_stack.append({'context': e.context})
         self._writeRouter(e.property, serializing_kit)
         self._writeRouter(e.arg1, serializing_kit)
 
@@ -360,6 +383,7 @@ class HKOWriterHKG:
 
             hkg_arg1 = serializing_kit.mapIndividualToHkg.get(e.arg1)
             hkg_arg2 = serializing_kit.mapIndividualToHkg.get(e.arg2)
+            econtext = serializing_kit.mapContextToHkg.get(e.context)
 
             hkg_connector = HKConnector(id_=encode_iri(e.property.iri), class_name=ConnectorType.FACTS,
                                                 roles={HK_BIND_ARG_1: RoleType.SUBJECT,
@@ -368,7 +392,7 @@ class HKOWriterHKG:
             hkg_link: HKLink = HKLink(
                 id_=encode_iri(e.property.iri + '-' + str(uuid.uuid4())),
                 connector=encode_iri(e.property.iri),
-                parent=currentContext.id_,
+                parent=econtext.id_,
             )
 
             hkg_link.add_bind(HK_BIND_ARG_1, hkg_arg1.id_)
@@ -387,6 +411,34 @@ class HKOWriterHKG:
         serializing_kit.writtenHkO.add(e)
         # self.mapNodesToHKElements.set(hkg, e)
 
+    def _writeHKOImportContextAssertion(self, e: HKOImportContextAssertion, serializing_kit) -> None:
+        if e in serializing_kit.writtenHkO:
+            return None  # already written
+
+
+        self._writeRouter(e.sub, serializing_kit)
+        self._writeRouter(e.sup, serializing_kit)
+
+        # self.state_stack.pop()
+
+        hkg_sub = serializing_kit.mapIndividualToHkg.get(e.sub)
+        hkg_sup = serializing_kit.mapIndividualToHkg.get(e.sup)
+        econtext = serializing_kit.mapContextToHkg.get(e.context)
+
+
+        hkg_link: HKLink = HKLink(
+            id_=encode_iri(CONTEXT_IMPORT_CONNECTOR + '-' + str(uuid.uuid4())),
+            connector=encode_iri(CONTEXT_IMPORT_CONNECTOR),
+            parent=econtext.id_,
+        )
+
+        hkg_link.add_bind('sub', hkg_sub.id_)
+        hkg_link.add_bind('sup', hkg_sup.id_)
+
+        serializing_kit.writtenHkG.append(hkg_link)
+
+        serializing_kit.writtenHkO.add(e)
+
     def _writeHKOContext(self, e: HKOContext, serializing_kit) -> HKOContext:
         if e in serializing_kit.writtenNamedElements:
             return None  # already written
@@ -402,17 +454,28 @@ class HKOWriterHKG:
             parent=parent_id,
         )
 
-        serializing_kit.state_stack.append({'context': hkg})
+        serializing_kit.contexts_to_write.put_nowait(e)
 
         serializing_kit.writtenHkG.append(hkg)
         serializing_kit.writtenNamedElements.add(e)
 
         serializing_kit.mapContextToHkg[e] = hkg
 
-        for entity in e.elements:
-            self._writeRouter(entity, serializing_kit)
 
-        serializing_kit.state_stack.pop()
+
+    def _write_context_elements(self, serializing_kit : SerializingKit) -> None:
+
+        while not serializing_kit.contexts_to_write.empty():
+            e = serializing_kit.contexts_to_write.get_nowait()
+
+            # push context
+            currentContext = serializing_kit.context_stack.append(e)
+
+            for entity in e.elements:
+                self._writeRouter(entity, serializing_kit)
+
+            #pop context
+            serializing_kit.context_stack.pop()
 
     def _writeRouter(self, e: HKOElement, serializing_kit):
         if isinstance(e, HKOConcept):
@@ -437,6 +500,8 @@ class HKOWriterHKG:
             self._writeHKOConceptAssertion(e, serializing_kit)
         elif isinstance(e, HKOPropertyAssertion):
             self._writeHKOPropertyAssertion(e, serializing_kit)
+        elif isinstance(e, HKOImportContextAssertion):
+            self._writeHKOImportContextAssertion(e, serializing_kit)
         elif isinstance(e, HKOContext):
             self._writeHKOContext(e, serializing_kit)
         else:
@@ -444,19 +509,10 @@ class HKOWriterHKG:
 
     def writeHKOContext(self, baseContext: HKOContext) -> [HKEntity]:
 
-        class SerializingKit:
-            writtenHkG: [HKEntity] = []
-            writtenHkO: Set[HKEntity] = set()
-            writtenNamedElements: Set[HKEntity] = set()
-            mapConceptExpressionToHkg: Dict[HKOConceptExpression, HKEntity] = {}
-            mapPropertyToHkg: Dict[HKOProperty, HKEntity] = {}
-            mapIndividualToHkg: Dict[HKOIndividual, HKEntity] = {}
-            mapContextToHkg: Dict[HKOContext, HKEntity] = {}
-            state_stack = []
-
         serializing_kit = SerializingKit()
 
         self._writeHKOContext(baseContext, serializing_kit)
+        self._write_context_elements(serializing_kit)
 
         self.fix_connectors(serializing_kit.writtenHkG)
 
