@@ -20,7 +20,7 @@ class HKBase(object):
     """ This class establishes a communication interface with a hkbase.
     """
 
-    def __init__(self, url: str, api_version: str='v2', auth: Optional[str]=None):
+    def __init__(self, url: str, api_version: str='v3', auth: Optional[str]=None):
         """ Initialize an instance of HKBase class.
     
         Parameters
