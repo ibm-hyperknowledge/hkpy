@@ -20,7 +20,7 @@ class HKBase(object):
     """ This class establishes a communication interface with a hkbase.
     """
 
-    def __init__(self, url: str, api_version: str='v2', auth: Optional[str]=None):
+    def __init__(self, url: str, api_version: str=None, auth: Optional[str]=None):
         """ Initialize an instance of HKBase class.
     
         Parameters
@@ -32,7 +32,7 @@ class HKBase(object):
         
         self.url = url
         self.api_version = api_version
-        self._base_uri = f'{self.url}/{self.api_version}'
+        self._base_uri = f'{self.url}/{self.api_version}' if api_version else self.url
         self._repository_uri = f'{self._base_uri}/repository'
         self._observer_uri = f'{self._base_uri}/observer'
         self._headers = {'Content-Type' : 'application/json'}
