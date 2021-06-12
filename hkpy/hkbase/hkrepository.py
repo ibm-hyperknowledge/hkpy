@@ -242,7 +242,15 @@ class HKRepository(object):
         for entry in data:
             if isinstance(entry, dict):
                 entry = [entry]
-            row = [hkfy(e) for e in entry]
+            if isinstance(entry, list):
+                row = []
+                for e in entry:
+                    if isinstance(e, dict):
+                        row.append(hkfy(e))
+                    else:
+                        row.append(e)
+            else:
+                row = entry
             row_matrix.append(row)
 
         return HKEntityResultSet.build(row_matrix=row_matrix)
