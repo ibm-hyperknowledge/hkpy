@@ -237,7 +237,7 @@ class HKRepository(object):
         response = requests.post(url=url, data=query, params=params, headers=headers)
         _, data = response_validator(response=response)
 
-        data = cast(Union[List[dict], List[List[dict]]], data)
+        data = cast(Union[List[dict], List[List[dict]], List[Any]], data)
         row_matrix = list()
         for entry in data:
             if isinstance(entry, dict):
