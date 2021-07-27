@@ -136,7 +136,7 @@ class HKRepository(object):
         
         return [hkfy(entity) for entity in data.values()]
 
-    def delete_entities(self, ids: Union[str, List[str], HKEntity, List[HKEntity]] = None, transaction: Optional[HKTransaction]=None) -> None:
+    def delete_entities(self, ids: Optional[Union[str, List[str], HKEntity, List[HKEntity]]] = None, transaction: Optional[HKTransaction]=None) -> None:
         """ Delete entities from the repository using their ids.
 
         Parameters
