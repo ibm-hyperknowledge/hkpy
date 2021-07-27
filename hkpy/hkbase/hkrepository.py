@@ -136,7 +136,7 @@ class HKRepository(object):
         
         return [hkfy(entity) for entity in data.values()]
 
-    def delete_entities(self, ids: Union[str, List[str], HKEntity, List[HKEntity]], transaction: Optional[HKTransaction]=None) -> None:
+    def delete_entities(self, ids: Union[str, List[str], HKEntity, List[HKEntity]] = None, transaction: Optional[HKTransaction]=None) -> None:
         """ Delete entities from the repository using their ids.
 
         Parameters
@@ -146,11 +146,14 @@ class HKRepository(object):
 
         url = f'{self.base._repository_uri}/{self.name}/entity/'
 
-        if not isinstance(ids, (list,tuple)):
-            ids = [ids]
-        
-        if isinstance(ids[0], HKEntity):
-            ids = [x.id_ for x in ids]
+        if ids is None or len(ids) == 0:
+            ids = {}
+        else:
+            if not isinstance(ids, (list,tuple)):
+                ids = [ids]
+
+            if isinstance(ids[0], HKEntity):
+                ids = [x.id_ for x in ids]
             
         response = requests.delete(url=url, data=json.dumps(ids), headers=self._headers)
         response_validator(response=response)
