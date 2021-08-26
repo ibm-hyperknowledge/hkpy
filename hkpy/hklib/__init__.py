@@ -38,17 +38,17 @@ def hkfy(entity: Union[str, Dict]) -> HKEntity:
         
         elif entity['type'] in ['context', 'node', 'ref']:
             if entity['type'] == constants.HKType.CONTEXT:
-                hke = HKContext(id_=entity['id'], parent=entity['parent'])
+                hke = HKContext(id_=entity['id'], parent=entity.get('parent'))
             elif entity['type'] == constants.HKType.NODE:
-                hke = HKNode(id_=entity['id'], parent=entity['parent'])
+                hke = HKNode(id_=entity['id'], parent=entity.get('parent'))
             elif entity['type'] == constants.HKType.REFERENCENODE:
                 ref = entity['ref'] if 'ref' in entity else None
-                hke = HKReferenceNode(id_=entity['id'], ref=ref, parent=entity['parent'])       
+                hke = HKReferenceNode(id_=entity['id'], ref=ref, parent=entity.get('parent'))       
             if 'interfaces' in entity:
                 hke.interfaces = entity['interfaces']
 
         elif entity['type'] == constants.HKType.LINK:
-            hke = HKLink(connector=entity['connector'], id_=entity['id'], binds=entity['binds'], parent=entity['parent'])
+            hke = HKLink(connector=entity['connector'], id_=entity['id'], binds=entity['binds'], parent=entity.get('parent'))
 
         elif entity['type'] == constants.HKType.ANCHOR:
             raise NotImplementedError
