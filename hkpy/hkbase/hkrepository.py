@@ -210,9 +210,16 @@ class HKRepository(object):
     def clear(self) -> None:
         """ Delete all entities in the repository.
         """
-        
-        entities = self.get_entities(filter_={})
-        self.delete_entities(ids=entities, transaction=None)
+
+        tmp_headers = copy.copy(self._headers)
+        tmp_headers.update({
+            'Content-Type': 'text/plain'
+        })
+
+        url = f'{self.base._repository_uri}/{self.name}/entity'
+
+        response = requests.delete(url=url, data='*', headers=tmp_headers)
+        response_validator(response)
 
     def hyql(self, query: str, transitivity: Optional[bool] = False) -> HKEntityResultSet:
         """ Performs a HyQL query on the repository and retrive its results.
