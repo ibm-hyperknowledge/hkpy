@@ -36,6 +36,11 @@ def response_validator(response, whitelist=None, content='json'):
     if res_code in whitelist if whitelist else 200 <= res_code < 300:
         return res_code, res_content
     else:
+        if res_content is None:
+            try:
+                res_content = response.json()
+            except:
+                res_content = response.text
         raise HKBError(code=res_code, message=res_content, url=res_url)
 
 def log_curl_command(response):
