@@ -7,6 +7,7 @@ from typing import List, Optional
 
 import requests
 from abc import abstractmethod
+import jwt
 
 from . import HKRepository
 from ..hklib import hkfy
@@ -20,7 +21,7 @@ class HKBase(object):
     """ This class establishes a communication interface with a hkbase.
     """
 
-    def __init__(self, url: str, api_version: str=None, auth: Optional[str]=None):
+    def __init__(self, url: str, api_version: str=None, auth: Optional[str]=None, secret: Optional[str]=None):
         """ Initialize an instance of HKBase class.
     
         Parameters
@@ -147,3 +148,28 @@ class HKBase(object):
             raise err
         except Exception as err:
             raise HKpyError(message='Could not retrieve existing repositories.', error=err)
+
+    @staticmethod
+    def get_auth_token(secret: str, exp=2 * 60):
+        """ Generate auth token with jwt
+
+        Parameters
+        ----------
+        secret : (str) secret used to sign the token
+        exp: The “exp” (expiration time) claim identifies the expiration time on
+        or after which the JWT MUST NOT be accepted for processing.
+        The processing of the “exp” claim requires that the current date/time MUST
+        be before the expiration date/time listed in the “exp” claim. Implementers MAY provide for some small leeway,
+        usually no more than a few minutes, to account for clock skew.
+        Its value MUST be a number containing a NumericDate value. Use of this claim is OPTIONAL
+
+        Returns
+        -------
+        (str) auth token
+        """
+
+        if secret:
+            if exp:
+                return jwt.encode({}, secret)
+            return jwt.encode({'exp': exp}, secret)
+        return ''
