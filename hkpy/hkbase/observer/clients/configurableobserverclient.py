@@ -1,11 +1,16 @@
-import traceback
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
 
-from .observerclient import ObserverClient
+import traceback
 from hkpy import HKBase
 import logging
 import requests
 from threading import Thread
 import time
+
+from .observerclient import ObserverClient
 
 
 class ConfigurableObserverClient(ObserverClient):

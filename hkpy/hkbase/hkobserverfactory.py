@@ -1,9 +1,17 @@
-import requests
-import sys, inspect
-import traceback
+###
+# Copyright (c) 2019-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
+import inspect
 import logging
-from hkpy import HKBase
 import os
+import sys
+import traceback
+
+import requests
+
+from hkpy import HKBase
 
 classes = inspect.getmembers(os.path.join(sys.modules[__name__], 'observer', 'clients'), inspect.isclass)
 clients = {}
