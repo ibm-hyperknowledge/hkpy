@@ -8,6 +8,8 @@ from typing import List, Optional
 import requests
 from abc import abstractmethod
 import jwt
+import datetime
+from time import timezone
 
 from . import HKRepository
 from ..hklib import hkfy
@@ -150,7 +152,7 @@ class HKBase(object):
             raise HKpyError(message='Could not retrieve existing repositories.', error=err)
 
     @staticmethod
-    def get_auth_token(secret: str, exp=2 * 60):
+    def get_auth_token(secret: str, exp=datetime.datetime.now(tz=timezone.utc) + datetime.timedelta(milliseconds=2 * 60)):
         """ Generate auth token with jwt
 
         Parameters
