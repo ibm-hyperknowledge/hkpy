@@ -9,7 +9,7 @@ import requests
 from threading import Thread
 import time
 
-from .observerclient import ObserverClient, HKBase
+from hkpy.hkbase.observer.clients.observerclient import ObserverClient, HKBase
 
 
 class ConfigurableObserverClient(ObserverClient):

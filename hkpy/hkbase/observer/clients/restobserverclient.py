@@ -13,8 +13,8 @@ from flask_cors import CORS
 from threading import Thread
 import logging
 
-from .configurableobserverclient import ConfigurableObserverClient as ObserverClient
-from .configurableobserverclient import HKBase
+from hkpy.hkbase.observer.clients.configurableobserverclient import ConfigurableObserverClient as ObserverClient
+from hkpy.hkbase.observer.clients.configurableobserverclient import HKBase
 
 
 class RESTObserverClient(ObserverClient):

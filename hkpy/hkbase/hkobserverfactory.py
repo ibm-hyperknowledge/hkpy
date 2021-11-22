@@ -5,25 +5,24 @@
 
 import inspect
 import logging
-from os.path import dirname, basename, isfile, join
+from os.path import dirname, isfile, join
 import traceback
 import glob
 import requests
+import importlib.machinery
 
-from .observer.clients.observerclient import HKBase
+from hkpy.hkbase.observer.clients.observerclient import HKBase
 
-classes = []
-modules = glob.glob(join(dirname(__file__), 'observer', 'clients', "*.py"))
-for m in modules:
-    if isfile(m) and not m.endswith('__init__.py'):
-        classes.extend(inspect.getmembers(m, inspect.isclass))
-
-clients = {}
-print('classes', classes)
-for c in classes:
-    print('c.__name__', c.__name__)
-    print('c', c)
-    clients[c.__name__] = c
+clients_by_key = {}
+clients_dirpath = join(dirname(__file__), 'observer', 'clients')
+modules_filepaths = glob.glob(join(clients_dirpath, "*.py"))
+for module_filepath in modules_filepaths:
+    if isfile(module_filepath) and not module_filepath.endswith('__init__.py'):
+        module_name = f"{module_filepath.replace(clients_dirpath, '').replace('.py', '').replace('/', '')}"
+        loader = importlib.machinery.SourceFileLoader(module_name, module_filepath)
+        module = loader.load_module(module_name)
+        for class_name, klass in inspect.getmembers(module, inspect.isclass):
+            clients_by_key[klass.TYPE_KEY] = klass
 
 
 def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
@@ -41,7 +40,7 @@ def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
         info = response.json()
         print('info', info)
 
-        klass = clients.get(info['type'], None)
+        klass = clients_by_key.get(info['type'], None)
         if klass is None:
             raise Exception(f"Cannot create a client for observer: {info['type']}")
 
@@ -67,4 +66,4 @@ def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
     except:
         traceback.print_exc()
         logging.error('Creating a default client')
-        return clients['default'](hkbase, info, observer_options)
+        return clients_by_key['default'](hkbase, info, observer_options)

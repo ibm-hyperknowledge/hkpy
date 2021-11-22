@@ -9,8 +9,8 @@ import traceback
 
 import pika
 
-from .configurableobserverclient import ConfigurableObserverClient as ObserverClient
-from .configurableobserverclient import HKBase
+from hkpy.hkbase.observer.clients.configurableobserverclient import ConfigurableObserverClient as ObserverClient
+from hkpy.hkbase.observer.clients.configurableobserverclient import HKBase
 
 
 class RabbitMQObserverClient(ObserverClient):
