@@ -65,8 +65,9 @@ class RabbitMQObserverClient(ObserverClient):
 
             def callback(ch, method, properties, body):
                 try:
-                    notification = json.loads(body.decode('utf-8'))
-                    self.notify(notification)
+                    if queue_name == '' or method.routing_key == queue_name:
+                        notification = json.loads(body.decode('utf-8'))
+                        self.notify(notification)
                 except Exception as e:
                     traceback.print_exc()
                     logging.error(e)
