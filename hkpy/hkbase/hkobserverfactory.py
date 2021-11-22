@@ -22,7 +22,8 @@ for module_filepath in modules_filepaths:
         loader = importlib.machinery.SourceFileLoader(module_name, module_filepath)
         module = loader.load_module(module_name)
         for class_name, klass in inspect.getmembers(module, inspect.isclass):
-            clients_by_key[klass.TYPE_KEY] = klass
+            if hasattr(klass, 'TYPE_KEY'):
+                clients_by_key[klass.TYPE_KEY] = klass
 
 
 def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
@@ -33,7 +34,7 @@ def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
 
     try:
 
-        response = requests.get(f'{hkbase.url}observer/info', headers=hkbase_options)
+        response = requests.get(f'{hkbase.url}/observer/info', headers=hkbase_options)
         if not response.ok:
             raise Exception(f'[Code: {response.status_code}] {response.content}')
 
