@@ -5,17 +5,20 @@
 
 import inspect
 import logging
-import os
-import sys
+from os.path import dirname, basename, isfile, join
 import traceback
-
+import glob
 import requests
 
-from hkpy import HKBase
+from .observer.clients.observerclient import HKBase
 
-classes = inspect.getmembers(os.path.join(sys.modules[__name__], 'observer', 'clients'), inspect.isclass)
+classes = []
+modules = glob.glob(join(dirname(__file__), 'observer', 'clients', "*.py"))
+for m in modules:
+    if isfile(m) and not m.endswith('__init__.py'):
+        classes.extend(inspect.getmembers(m, inspect.isclass))
+
 clients = {}
-
 print('classes', classes)
 for c in classes:
     print('c.__name__', c.__name__)

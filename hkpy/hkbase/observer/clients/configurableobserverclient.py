@@ -4,13 +4,12 @@
 ###
 
 import traceback
-from hkpy import HKBase
 import logging
 import requests
 from threading import Thread
 import time
 
-from .observerclient import ObserverClient
+from .observerclient import ObserverClient, HKBase
 
 
 class ConfigurableObserverClient(ObserverClient):
