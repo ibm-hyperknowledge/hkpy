@@ -31,7 +31,7 @@ class RabbitMQObserverClient(ObserverClient):
             info = {}
 
         self._config = {
-            'broker': info.get('broken', None),
+            'broker': info.get('broker', None),
             'exchangeName': info.get('exchangeName', None),
             'exchangeOptions': info.get('exchangeOptions', {}),
             'certificate': info.get('certificate', observer_options.get('certificate', None)),
@@ -48,16 +48,16 @@ class RabbitMQObserverClient(ObserverClient):
                 logging.info('registering as observer of hkbase')
 
             host, port = self._parse_config()
-            connection_params = self._config['exchangeOptions']
-            connection_params.update({'_address': host})
+            connection_params = {}
+            connection_params.update({'host': host})
             if port is not None:
-                connection_params['_port'] = port
+                connection_params['port'] = port
             if self._config.get('certificate', False):
                 connection_params['credentials'] = self._config['certificate']
 
             connection = pika.BlockingConnection(pika.ConnectionParameters(**connection_params))
             channel = connection.channel()
-            result = channel.queue_declare(queue=queue_name)
+            result = channel.queue_declare(queue=queue_name, **self._config['exchangeOptions'])
             queue_name = result.method.queue
             channel.queue_bind(queue_name, exchange=self._config['exchangeName'])
 
@@ -73,7 +73,7 @@ class RabbitMQObserverClient(ObserverClient):
 
             channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
 
-            print(f" [*] Waiting for messages in {queue_name}. To exit press CTRL+C")
+            logging.info(f" [*] Waiting for messages in {queue_name}. To exit press CTRL+C")
             channel.start_consuming()
         except Exception as e:
             traceback.print_exc()

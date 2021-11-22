@@ -31,7 +31,7 @@ class ConfigurableObserverClient(ObserverClient):
         self._hkbase_options = hkbase_options
         self._observer_service_url = observer_service_options.get('url', None)
         self._observer_configuration = observer_service_options.get('observerConfiguration', None)
-        self._observer_service_heartbeat_interval = observer_service_options.get('heartbeatInteval', -1)
+        self._observer_service_heartbeat_interval = observer_service_options.get('heartbeatInterval', -1)
 
         self._heartbeat_timeout = None
 
@@ -43,12 +43,13 @@ class ConfigurableObserverClient(ObserverClient):
         headers = {'content-type': 'application/json'}
         self.set_hkkbase_options(headers)
         logging.info('registering specialized observer')
-        response = requests.post(f"{self._observer_service_url}/observer", headers=headers)
+        response = requests.post(f"{self._observer_service_url}/observer", headers=headers, json=self._observer_configuration)
         if not response.ok:
             raise Exception(f'[{response.status_code}] {response.content}')
         observer_id = response.json()['observerId']
         logging.info(f"registering with observerId: {observer_id}")
         self.set_heartbeat(observer_id)
+        return observer_id
 
     def set_heartbeat(self, observer_id: str):
         if self._observer_service_heartbeat_interval <= 0:
