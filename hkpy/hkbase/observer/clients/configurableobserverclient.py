@@ -40,7 +40,7 @@ class ConfigurableObserverClient(ObserverClient):
 
     def register_observer(self):
         logging.info('registering as observer of hkbase')
-        headers = {'content-type': 'aplication/json'}
+        headers = {'content-type': 'application/json'}
         self.set_hkkbase_options(headers)
         logging.info('registering specialized observer')
         response = requests.post(f"{self._observer_service_url}/observer", headers=headers)
