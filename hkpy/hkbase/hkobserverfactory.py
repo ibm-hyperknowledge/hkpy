@@ -39,7 +39,6 @@ def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
             raise Exception(f'[Code: {response.status_code}] {response.content}')
 
         info = response.json()
-        print('info', info)
 
         klass = clients_by_key.get(info['type'], None)
         if klass is None:
