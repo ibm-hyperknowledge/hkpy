@@ -51,6 +51,7 @@ class ConfigurableObserverClient(ObserverClient):
         logging.info(f"registering with observerId: {observer_id}")
         self.set_heartbeat(observer_id)
         self._observer_id = observer_id
+        return observer_id
 
     def set_heartbeat(self, observer_id: str):
         if self._observer_service_heartbeat_interval <= 0:

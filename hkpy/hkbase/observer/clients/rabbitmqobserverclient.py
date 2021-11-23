@@ -39,9 +39,11 @@ class RabbitMQObserverClient(ObserverClient):
 
     def init(self):
         try:
+
+            queue_name = ''
             if self.uses_specialized_observer():
                 logging.info('registering as observer of hkbase observer service')
-                self.register_observer()
+                queue_name = self.register_observer()
             else:
                 logging.info('registering as observer of hkbase')
 
@@ -55,7 +57,7 @@ class RabbitMQObserverClient(ObserverClient):
 
             connection = pika.BlockingConnection(pika.ConnectionParameters(**connection_params))
             channel = connection.channel()
-            result = channel.queue_declare(queue='', **self._config['exchangeOptions'])
+            result = channel.queue_declare(queue=queue_name, **self._config['exchangeOptions'])
             queue_name = result.method.queue
             channel.queue_bind(queue_name, exchange=self._config['exchangeName'])
 
