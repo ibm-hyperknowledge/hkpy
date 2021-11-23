@@ -126,6 +126,6 @@ class RESTObserverClient(ObserverClient):
 
         self._flask_app.route(f'/repository/<repo_name>', methods=['POST'])(created_repository_callback)
         self._flask_app.route(f'/repository/<repo_name>', methods=['DELETE'])(deleted_repository_callback)
-        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['POST'])(changed_entities_callback)
-        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['PUT'])(added_entities_callback)
+        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['POST'])(added_entities_callback)
+        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['PUT'])(changed_entities_callback)
         self._flask_app.route(f'/repository/<repo_name>/entity', methods=['DELETE'])(removed_entities_callback)
