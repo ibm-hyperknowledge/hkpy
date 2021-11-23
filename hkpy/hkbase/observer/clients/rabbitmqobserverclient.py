@@ -40,10 +40,11 @@ class RabbitMQObserverClient(ObserverClient):
     def init(self):
         try:
             queue_name = ''
-
+            is_default_queue = True
             if self.uses_specialized_observer():
                 logging.info('registering as observer of hkbase observer service')
                 queue_name = self.register_observer()
+                is_default_queue = False
             else:
                 logging.info('registering as observer of hkbase')
 
@@ -66,9 +67,10 @@ class RabbitMQObserverClient(ObserverClient):
             def callback(ch, method, properties, body):
                 try:
                     message = json.loads(body.decode('utf-8'))
-                    if queue_name == '':
+                    observer_id = message.get('observerId', '')
+                    if is_default_queue and observer_id == '':
                         self.notify(message)
-                    elif message.get('observerId', '') == queue_name:
+                    elif observer_id == queue_name:
                         self.notify(message.get('notification', {}))
                 except Exception as e:
                     traceback.print_exc()
