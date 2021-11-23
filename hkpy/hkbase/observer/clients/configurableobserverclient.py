@@ -6,8 +6,7 @@
 import traceback
 import logging
 import requests
-from threading import Thread
-import time
+import signal
 
 from hkpy.hkbase.observer.clients.observerclient import ObserverClient, HKBase
 
@@ -57,23 +56,23 @@ class ConfigurableObserverClient(ObserverClient):
         if self._observer_service_heartbeat_interval <= 0:
             return
 
-        heartbeat_interval = self._observer_service_heartbeat_interval / 1000  # ms to s
+        heartbeat_interval = int(self._observer_service_heartbeat_interval / 1000)  # ms to s
 
         headers = {}
         self.set_hkkbase_options(headers)
 
-        def heartbeat():
-            while True:
-                try:
-                    response = requests.post(f"{self._observer_service_url}/observer/{observer_id}/heartbeat",
-                                             headers=headers)
-                except Exception as e:
-                    traceback.print_exc()
-                    logging.error(e)
-                time.sleep(heartbeat_interval)
+        def heartbeat(signum, frame):
+            try:
+                response = requests.post(f"{self._observer_service_url}/observer/{observer_id}/heartbeat",
+                                         headers=headers)
+                response.raise_for_status()
+            except Exception as e:
+                traceback.print_exc()
+                logging.error(e)
+            signal.alarm(heartbeat_interval)
 
-        heartbeat_thread = Thread(target=heartbeat)
-        return heartbeat_thread
+        signal.signal(signal.SIGALRM, heartbeat)
+        signal.alarm(heartbeat_interval)
 
     def set_hkkbase_options(self, params):
         params.update(self._hkbase_options)
