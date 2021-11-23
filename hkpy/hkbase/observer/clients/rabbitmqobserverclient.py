@@ -68,7 +68,7 @@ class RabbitMQObserverClient(ObserverClient):
                     message = json.loads(body.decode('utf-8'))
                     if observer_id and message.get('observerId', '') == observer_id:
                         self.notify(message.get('notification', {}))
-                    else:
+                    elif not observer_id:
                         self.notify(message)
                 except Exception as e:
                     traceback.print_exc()
