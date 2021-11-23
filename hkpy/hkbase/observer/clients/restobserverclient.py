@@ -36,7 +36,6 @@ class RESTObserverClient(ObserverClient):
         self._port = observer_options.get('port', 0)
         self._address = observer_options.get('address', 'http://localhost')
         self._flask_app = flask_app
-        self._observer_id = None
 
     def init(self):
         self.setup_endpoints()
@@ -49,7 +48,7 @@ class RESTObserverClient(ObserverClient):
                 thread.start()
             if self.uses_specialized_observer():
                 self._observer_configuration['callbackEndpoint'] = listening_path
-                self._observer_id = self.register_observer()
+                self.register_observer()
             else:
                 logging.info('registering as observer of hkbase')
                 headers = {}

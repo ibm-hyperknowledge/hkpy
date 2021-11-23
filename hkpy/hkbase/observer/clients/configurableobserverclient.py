@@ -34,6 +34,7 @@ class ConfigurableObserverClient(ObserverClient):
         self._observer_service_heartbeat_interval = observer_service_options.get('heartbeatInterval', -1)
 
         self._heartbeat_timeout = None
+        self._observer_id = ''
 
     def uses_specialized_observer(self):
         return self._observer_service_url is not None and self._observer_configuration is not None
@@ -49,7 +50,7 @@ class ConfigurableObserverClient(ObserverClient):
         observer_id = response.json()['observerId']
         logging.info(f"registering with observerId: {observer_id}")
         self.set_heartbeat(observer_id)
-        return observer_id
+        self._observer_id = observer_id
 
     def set_heartbeat(self, observer_id: str):
         if self._observer_service_heartbeat_interval <= 0:

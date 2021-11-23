@@ -39,12 +39,9 @@ class RabbitMQObserverClient(ObserverClient):
 
     def init(self):
         try:
-            queue_name = ''
-            is_default_queue = True
             if self.uses_specialized_observer():
                 logging.info('registering as observer of hkbase observer service')
-                queue_name = self.register_observer()
-                is_default_queue = False
+                self.register_observer()
             else:
                 logging.info('registering as observer of hkbase')
 
@@ -58,20 +55,19 @@ class RabbitMQObserverClient(ObserverClient):
 
             connection = pika.BlockingConnection(pika.ConnectionParameters(**connection_params))
             channel = connection.channel()
-            result = channel.queue_declare(queue=queue_name, **self._config['exchangeOptions'])
+            result = channel.queue_declare(queue='', **self._config['exchangeOptions'])
             queue_name = result.method.queue
             channel.queue_bind(queue_name, exchange=self._config['exchangeName'])
 
             logging.info(f"Bound to exchange {self._config['exchangeName']}")
 
+            observer_id = self._observer_id
+
             def callback(ch, method, properties, body):
                 try:
-                    message = json.loads(body.decode('utf-8'))
-                    observer_id = message.get('observerId', '')
-                    if is_default_queue and observer_id == '':
-                        self.notify(message)
-                    elif observer_id == queue_name:
-                        self.notify(message.get('notification', {}))
+                    notification = json.loads(body.decode('utf-8'))
+                    if method.routing_key == observer_id:
+                        self.notify(notification)
                 except Exception as e:
                     traceback.print_exc()
                     logging.error(e)
