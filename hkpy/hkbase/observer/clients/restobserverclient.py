@@ -83,7 +83,9 @@ class RESTObserverClient(ObserverClient):
         /repository/<repoName>/entity`: Entites were removed from repository `repoName`.
         """
 
-        def repository_callback(action, repo_name, notification_callback):
+        notification_callback = self.notify
+
+        def repository_callback(action, repo_name):
             notification = {
                 'action': action,
                 'object': 'repository',
@@ -91,7 +93,7 @@ class RESTObserverClient(ObserverClient):
             }
             notification_callback(notification)
 
-        def entities_callback(action, repo_name, entities, notification_callback):
+        def entities_callback(action, repo_name, entities):
             notification = {
                 'action': action,
                 'object': 'entities',
@@ -99,27 +101,27 @@ class RESTObserverClient(ObserverClient):
             }
             notification_callback(notification)
 
-        def created_repository_callback(repo_name: str, notification_callback):
-            repository_callback('create', repo_name, notification_callback)
+        def created_repository_callback(repo_name: str):
+            repository_callback('create', repo_name)
             return jsonify(None), 200
 
-        def deleted_repository_callback(repo_name: str, notification_callback):
-            repository_callback('delete', repo_name, notification_callback)
+        def deleted_repository_callback(repo_name: str):
+            repository_callback('delete', repo_name)
             return jsonify(None), 200
 
-        def added_entities_callback(repo_name: str, notification_callback):
+        def added_entities_callback(repo_name: str):
             entities = request.json
-            entities_callback('create', repo_name, entities, notification_callback)
+            entities_callback('create', repo_name, entities)
             return jsonify(None), 200
 
-        def changed_entities_callback(repo_name: str, notification_callback):
+        def changed_entities_callback(repo_name: str):
             entities = request.json
-            entities_callback('update', repo_name, entities, notification_callback)
+            entities_callback('update', repo_name, entities)
             return jsonify(None), 200
 
-        def removed_entities_callback(repo_name: str, notification_callback):
+        def removed_entities_callback(repo_name: str):
             entities = request.json
-            entities_callback('delete', repo_name, entities, notification_callback)
+            entities_callback('delete', repo_name, entities)
             return jsonify(None), 200
 
         self._flask_app.route(f'/repository/<repo_name>', methods=['POST'])(created_repository_callback)
