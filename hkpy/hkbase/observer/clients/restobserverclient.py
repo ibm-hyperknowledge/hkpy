@@ -12,6 +12,7 @@ from flask import Flask
 from flask_cors import CORS
 from threading import Thread
 import logging
+import socket
 
 from hkpy.hkbase.observer.clients.configurableobserverclient import ConfigurableObserverClient as ObserverClient
 from hkpy.hkbase.observer.clients.configurableobserverclient import HKBase
@@ -34,18 +35,25 @@ class RESTObserverClient(ObserverClient):
             observer_options = {}
 
         self._port = observer_options.get('port', 0)
-        self._address = observer_options.get('address', 'http://localhost')
+        self._address = observer_options.get('address', 'localhost')
         self._flask_app = flask_app
 
+        if self._port == 0:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.bind((self._address, 0))
+            self._port = sock.getsockname()[1]
+            sock.close()
+
+        if self._flask_app is None:
+            self._flask_app = Flask(__name__)
+            CORS(self._flask_app)
+            thread = Thread(target=self._flask_app.run, kwargs=dict(host=self._address, port=self._port))
+            thread.start()
+
     def init(self):
-        self.setup_endpoints()
         try:
-            listening_path = f"{self._address}:{self._port}"
-            if self._flask_app is None:
-                self._flask_app = Flask(__name__)
-                CORS(self._flask_app)
-                thread = Thread(target=self._flask_app.run, kwargs=dict(host=self._address, port=self._port))
-                thread.start()
+            listening_path = f"http://{self._address}:{self._port}"
+            self.setup_endpoints()
             if self.uses_specialized_observer():
                 self._observer_configuration['callbackEndpoint'] = listening_path
                 self.register_observer()
@@ -53,8 +61,8 @@ class RESTObserverClient(ObserverClient):
                 logging.info('registering as observer of hkbase')
                 headers = {}
                 self.set_hkkbase_options(headers)
-                encoded_self_path = urllib.parse.quote_plus(f'http://{self._address}:{self._port}/')
-                response = requests.put(f'{self._hkbase.url}/observer/{encoded_self_path}', headers=headers)
+                encoded_listening_path = urllib.parse.quote_plus(listening_path)
+                response = requests.put(f'{self._hkbase.url}/observer/{encoded_listening_path}', headers=headers)
                 if 400 <= response.status_code < 500:
                     logging.warning('observer already registered')
                     return
@@ -99,23 +107,23 @@ class RESTObserverClient(ObserverClient):
             repository_callback('delete', repo_name, notification_callback)
             return jsonify(None), 200
 
-        def added_entities(repo_name: str, notification_callback):
+        def added_entities_callback(repo_name: str, notification_callback):
             entities = request.json
             entities_callback('create', repo_name, entities, notification_callback)
             return jsonify(None), 200
 
-        def changed_entities(repo_name: str, notification_callback):
+        def changed_entities_callback(repo_name: str, notification_callback):
             entities = request.json
             entities_callback('update', repo_name, entities, notification_callback)
             return jsonify(None), 200
 
-        def removed_entities(repo_name: str, notification_callback):
+        def removed_entities_callback(repo_name: str, notification_callback):
             entities = request.json
             entities_callback('delete', repo_name, entities, notification_callback)
             return jsonify(None), 200
 
         self._flask_app.route(f'/repository/<repo_name>', methods=['POST'])(created_repository_callback)
         self._flask_app.route(f'/repository/<repo_name>', methods=['DELETE'])(deleted_repository_callback)
-        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['POST'])(changed_entities)
-        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['PUT'])(added_entities)
-        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['DELETE'])(removed_entities)
+        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['POST'])(changed_entities_callback)
+        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['PUT'])(added_entities_callback)
+        self._flask_app.route(f'/repository/<repo_name>/entity', methods=['DELETE'])(removed_entities_callback)
