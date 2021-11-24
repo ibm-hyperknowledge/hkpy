@@ -17,6 +17,7 @@ from ..oops import HKBError, HKpyError
 from ..utils import response_validator
 from ..common.result_set import ResultSet
 from .query import SPARQLResultSet
+from .query_management import HKStoredQuery
 
 __all__  = ['HKRepository']
 
@@ -74,7 +75,7 @@ class HKRepository(object):
 
         if not isinstance(entities, (list,tuple)):
             entities = [entities]
-        
+
         if isinstance(entities[0], HKEntity):
             entities = [x.to_dict() for x in entities]
         elif isinstance(entities[0], dict):
@@ -110,30 +111,30 @@ class HKRepository(object):
                 response = requests.post(url=url, data=filter_, headers=tmp_headers, params={})
             elif isinstance(filter_, dict):
                 response = requests.post(url=url, data=json.dumps(filter_), headers=self._headers)
-            elif isinstance(filter_, list): 
+            elif isinstance(filter_, list):
                 def check_list(the_filter, depth=0):
                     max_depth = 2
-                    if depth <= max_depth: 
-                        if isinstance(the_filter, str): 
+                    if depth <= max_depth:
+                        if isinstance(the_filter, str):
                             return True
-                        elif isinstance(the_filter, dict): 
+                        elif isinstance(the_filter, dict):
                             return True
                         elif isinstance(the_filter, list):
                             if all([check_list(i, depth+1) for i in the_filter]):
                                 return True
                     raise HKpyError(message='Invalid filter type.')
-                
+
                 check_list(filter_)
                 response = requests.post(url=url, data=json.dumps(filter_), headers=self._headers)
             else:
                 raise HKpyError(message='Invalid filter type.')
-                
+
             _, data = response_validator(response=response)
         except (HKBError, HKpyError) as err:
             raise err
         except Exception as err:
             raise HKBError(message='Could not retrieve the entities.', error=err)
-        
+
         return [hkfy(entity) for entity in data.values()]
 
     def delete_entities(self, ids: Optional[Union[str, List[str], HKEntity, List[HKEntity]]] = None, transaction: Optional[HKTransaction]=None) -> None:
@@ -154,7 +155,7 @@ class HKRepository(object):
 
             if isinstance(ids[0], HKEntity):
                 ids = [x.id_ for x in ids]
-            
+
         response = requests.delete(url=url, data=json.dumps(ids), headers=self._headers)
         response_validator(response=response)
 
@@ -166,7 +167,7 @@ class HKRepository(object):
         entities : (Union[HKEntity, List[HKEntity]]) entity or list of entities
         transaction : Optional[HKTransaction] connection transaction
         """
-        
+
         self.add_entities(entities, transaction)
 
     def import_data(self, fd: Union[str, TextIOWrapper], datatype: constants.ContentType, **options) -> None:
@@ -185,10 +186,10 @@ class HKRepository(object):
             pass
         else:
             raise HKpyError(message='Data formaat not supported.')
-        
+
         if 'as_hk' in options and options['as_hk'] == True:
             self.add_entities(entities=json.loads(fd))
-        
+
         else:
             url = f'{self.base._repository_uri}/{self.name}/rdf'
 
@@ -247,23 +248,7 @@ class HKRepository(object):
         response = requests.post(url=url, data=query, params=params, headers=headers)
         _, data = response_validator(response=response)
 
-        data = cast(Union[List[dict], List[List[dict]], List[Any]], data)
-        row_matrix = list()
-        for entry in data:
-            if isinstance(entry, dict):
-                entry = [entry]
-            if isinstance(entry, list):
-                row = []
-                for e in entry:
-                    if isinstance(e, dict):
-                        row.append(hkfy(e))
-                    else:
-                        row.append(e)
-            else:
-                row = entry
-            row_matrix.append(row)
-
-        return HKEntityResultSet.build(row_matrix=row_matrix)
+        return self._build_hyql_result(data)
 
     def sparql(self, query: str, reasoning: Optional[bool] = None, by_pass: Optional[bool] = None) -> SPARQLResultSet:
         url = f'{self.base._repository_uri}/{self.name}/sparql/'
@@ -282,12 +267,12 @@ class HKRepository(object):
         response = requests.post(url=url, data=query, params=params, headers=headers)
         _, data = response_validator(response=response)
 
-        return SPARQLResultSet(data)
+        return self._build_sparql_result(data)
 
     def list_objects(self) -> List[str]:
         """
         """
-        
+
         url = f'{self.base._repository_uri}/{self.name}/storage'
 
         response = requests.get(url=url, headers=self._headers)
@@ -312,10 +297,10 @@ class HKRepository(object):
                 object_ = f.read()
         else:
             raise HKpyError(message='Object not valid.')
-        
+
         headers = copy.deepcopy(self._headers)
         headers['Content-Type'] = mimetype
-        
+
         response = requests.put(url=url, data=object_, headers=headers)
         _, data = response_validator(response=response)
 
@@ -324,7 +309,7 @@ class HKRepository(object):
     def delete_object(self, id_: str) -> None:
         """
         """
-        
+
         url = f'{self.base._repository_uri}/{self.name}/storage/object/{id_}'
 
         response = requests.delete(url=url, headers=self._headers)
@@ -340,3 +325,120 @@ class HKRepository(object):
         _, data = response_validator(response=response, content='.')
 
         return data
+
+    def get_all_stored_queries(self, transaction_id: Optional[str] = None) -> List[HKStoredQuery]:
+        url = f'{self.base._repository_uri}/{self.name}/stored-query'
+
+        headers = {**self._headers,
+                   "Content-type": "application/json"}
+
+        if transaction_id is not None:
+            headers['transactionId'] = transaction_id
+
+        response = requests.get(url=url, headers=headers)
+        _, data = response_validator(response=response)
+
+        return [HKStoredQuery.from_dict(q) for q in data]
+
+    def get_stored_query(self, query_id: str, transaction_id: Optional[str] = None) -> HKStoredQuery:
+        url = f'{self.base._repository_uri}/{self.name}/stored-query/{query_id}'
+
+        headers = {**self._headers,
+                   "Content-type": "application/json"}
+
+        if transaction_id is not None:
+            headers['transactionId'] = transaction_id
+
+        response = requests.get(url=url, headers=headers)
+        _, data = response_validator(response=response)
+
+        return HKStoredQuery.from_dict(data)
+
+    def deleted_stored_query(self, query_id: str, transaction_id: Optional[str] = None) -> HKStoredQuery:
+        url = f'{self.base._repository_uri}/{self.name}/stored-query/{query_id}'
+
+        headers = {**self._headers,
+                   "Content-type": "application/json"}
+
+        if transaction_id is not None:
+            headers['transactionId'] = transaction_id
+
+        response = requests.delete(url=url, headers=headers)
+        _, data = response_validator(response=response)
+
+        return HKStoredQuery.from_dict(data)
+
+    def store_query(self, stored_query: Union[Dict, HKStoredQuery],
+                    transaction_id: Optional[str] = None) -> HKStoredQuery:
+        url = f'{self.base._repository_uri}/{self.name}/stored-query'
+
+        if isinstance(stored_query, HKStoredQuery):
+            stored_query = stored_query.to_dict()
+        elif not isinstance(stored_query, dict):
+            raise HKpyError(f"Trying to store query object of unknown type {type(stored_query)}")
+
+        headers = {**self._headers,
+                   "Content-type": "application/json"}
+
+        if transaction_id is not None:
+            headers['transactionId'] = transaction_id
+
+        response = requests.post(url=url, headers=headers, json=stored_query.to_dict())
+        _, data = response_validator(response=response)
+
+        return HKStoredQuery.from_dict(data)
+
+    def run_stored_query(self, query_id: str, parameters: Optional[List[str]] = None,
+                         run_options: Optional[Dict] = None, transaction_id: Optional[str] = None,
+                         mime_type: Optional[str] = None) -> Union[HKEntityResultSet, SPARQLResultSet]:
+        run_configuration = dict()
+        if parameters is not None:
+            run_configuration['parameters'] = parameters
+        if run_options is not None:
+            run_configuration['options'] = run_options
+
+        if mime_type is not None:
+            options = run_configuration.get('options', {})
+            options['mimeType'] = mime_type
+
+        headers = {**self._headers, "Content-type": "application/json"}
+
+        if transaction_id is not None:
+            headers['transactionId'] = transaction_id
+
+        url = f'{self.base._repository_uri}/{self.name}/stored-query/{query_id}/run'
+
+        response = requests.post(url=url, json=run_configuration, headers=headers)
+        _, data = response_validator(response=response)
+        try:
+            return self._build_hyql_result(data)
+        except HKpyError as e:
+            return self._build_sparql_result(data)
+
+    def _build_hyql_result(self, data: Union[List[dict], List[List[dict]], List[Any]]) -> HKEntityResultSet:
+        # validate if data is of the correct type
+        if not isinstance(data, list):
+            raise HKpyError(f'The given data is not of the expected format')
+
+        row_matrix = list()
+        for entry in data:
+            if isinstance(entry, dict):
+                entry = [entry]
+            if isinstance(entry, list):
+                row = []
+                for e in entry:
+                    if isinstance(e, dict):
+                        row.append(hkfy(e))
+                    else:
+                        row.append(e)
+            else:
+                row = entry
+            row_matrix.append(row)
+
+        return HKEntityResultSet.build(row_matrix=row_matrix)
+
+    def _build_sparql_result(self, data) -> SPARQLResultSet:
+        # validate if data is of the correct format
+        if not ('results' in data and 'bindings' in data['results'] and 'head' in data):
+            raise HKpyError(f'The given data is not of the expected format')
+        return SPARQLResultSet(data)
