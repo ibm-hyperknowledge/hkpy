@@ -383,14 +383,15 @@ class HKRepository(object):
         if transaction_id is not None:
             headers['transactionId'] = transaction_id
 
-        response = requests.post(url=url, headers=headers, json=stored_query.to_dict())
+        response = requests.post(url=url, headers=headers, json=stored_query)
         _, data = response_validator(response=response)
 
         return HKStoredQuery.from_dict(data)
 
     def run_stored_query(self, query_id: str, parameters: Optional[List[str]] = None,
                          run_options: Optional[Dict] = None, transaction_id: Optional[str] = None,
-                         mime_type: Optional[str] = None) -> Union[HKEntityResultSet, SPARQLResultSet]:
+                         mime_type: Optional[str] = None, proxy: Optional[bool] = False) -> Union[HKEntityResultSet,
+                                                                                                  SPARQLResultSet]:
         run_configuration = dict()
         if parameters is not None:
             run_configuration['parameters'] = parameters
@@ -410,6 +411,8 @@ class HKRepository(object):
 
         response = requests.post(url=url, json=run_configuration, headers=headers)
         _, data = response_validator(response=response)
+        if proxy:
+            return data
         try:
             return self._build_hyql_result(data)
         except HKpyError as e:

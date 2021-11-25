@@ -21,7 +21,7 @@ class HKStoredQuery:
         # required properties
         parameters = {
             'query_text': dict_['queryText'],
-            'queryLanguage': dict_['queryLanguage'],
+            'query_language': dict_['queryLanguage'],
             'columns': dict_['columns']
         }
 
@@ -30,15 +30,15 @@ class HKStoredQuery:
             parameters['label'] = dict_['label']
         if 'parameters' in dict_:
             parameters['parameters'] = dict_['parameters']
-        if 'id_' in dict_:
-            parameters['id_'] = dict_['id_']
+        if 'id' in dict_:
+            parameters['id_'] = dict_['id']
 
         return cls(**parameters)
 
     def to_dict(self) -> Dict:
         dict_ = {
-            'query_text': self.query_text,
-            'query_language': self.query_language,
+            'queryText': self.query_text,
+            'queryLanguage': self.query_language,
             'columns': self.columns,
         }
 
