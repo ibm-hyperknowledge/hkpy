@@ -159,7 +159,7 @@ class HKBase(object):
             raise HKpyError(message='Could not retrieve existing repositories.', error=err)
 
     def info(self) -> HKInfo:
-        url = f'{self._repository_uri}/info'
+        url = f'{self._base_uri}/info'
 
         response = requests.get(url=url, headers=self._headers, verify=constants.SSL_VERIFY)
         _, data = response_validator(response=response)
