@@ -6,7 +6,7 @@
 import json
 import logging
 import traceback
-
+import os
 import pika
 
 from hkpy.hkbase.observer.clients.configurableobserverclient import ConfigurableObserverClient as ObserverClient
@@ -32,6 +32,7 @@ class RabbitMQObserverClient(ObserverClient):
 
         self._config = {
             'broker': info.get('broker', None),
+            'brokerExternal': info.get('brokerExternal', None),
             'exchangeName': info.get('exchangeName', None),
             'exchangeOptions': info.get('exchangeOptions', {}),
             'certificate': info.get('certificate', observer_options.get('certificate', None)),
@@ -92,4 +93,10 @@ class RabbitMQObserverClient(ObserverClient):
             port = url_components[1]
         else:
             port = None
+
+        ping_result = os.system("ping -c 1 " + host)
+        if ping_result != 0 and self._config.get('brokerExternal', False):
+            url_with_protocol = self._config['brokerExternal'].replace('amqp://', '')
+            url_components = url_with_protocol.split(':')
+            host = url_components[0]
         return host, port
