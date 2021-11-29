@@ -54,7 +54,7 @@ def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
             observer_service_params['url'] = observer_service_url
             observer_service_params['observerConfiguration'] = observer_configuration
 
-        if observer_service_params.get('url', False):
+        if observer_service_params.get('url', False) and observer_service_params.get('observerConfiguration', False):
             response = requests.get(f"{observer_service_params['url']}/observer/info")
             if not response.ok:
                 raise Exception(f'[Code: {response.status_code}] {response.content}')
