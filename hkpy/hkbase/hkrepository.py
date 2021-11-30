@@ -440,7 +440,9 @@ class HKRepository(object):
 
         return HKEntityResultSet.build(row_matrix=row_matrix)
 
-    def _build_sparql_result(self, data) -> SPARQLResultSet:
+    def _build_sparql_result(self, data) -> Union[SPARQLResultSet, bool]:
+        if 'head' in data and 'boolean' in data:
+            return data['boolean']
         # validate if data is of the correct format
         if not ('results' in data and 'bindings' in data['results'] and 'head' in data):
             raise HKpyError(f'The given data is not of the expected format')
