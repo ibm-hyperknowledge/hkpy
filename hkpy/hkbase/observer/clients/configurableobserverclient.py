@@ -42,12 +42,15 @@ class ConfigurableObserverClient(ObserverClient):
         logging.info('registering as observer of hkbase')
         headers = {'content-type': 'application/json'}
         self.set_hkkbase_options(headers)
-        logging.info('registering specialized observer')
-        response = requests.post(f"{self._observer_service_url}/observer", headers=headers, json=self._observer_configuration)
+        logging.info(f"registered as observer of hkbase observer service({self._observer_service_url}) "
+                     f"with configuration:")
+        logging.info(self._observer_configuration)
+        response = requests.post(f"{self._observer_service_url}/observer", headers=headers,
+                                 json=self._observer_configuration)
         if not response.ok:
             raise Exception(f'[{response.status_code}] {response.content}')
         observer_id = response.json()['observerId']
-        logging.info(f"registering with observerId: {observer_id}")
+        logging.info(f"registered with observerId: {observer_id}")
         self.set_heartbeat(observer_id)
         self._observer_id = observer_id
         return observer_id

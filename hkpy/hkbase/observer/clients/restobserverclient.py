@@ -49,8 +49,11 @@ class RESTObserverClient(ObserverClient):
             CORS(self._flask_app)
             thread = Thread(target=self._flask_app.run, kwargs=dict(host=self._address, port=self._port))
             thread.start()
+            logging.info(f"Flask Server initialized at port {self._port} for receiving callback requests of "
+                         f"HKBase notifications")
 
     def init(self):
+        logging.info("initializing REST observer client")
         try:
             listening_path = f"http://{self._address}:{self._port}"
             self.setup_endpoints()
@@ -58,7 +61,6 @@ class RESTObserverClient(ObserverClient):
                 self._observer_configuration['callbackEndpoint'] = listening_path
                 self.register_observer()
             else:
-                logging.info('registering as observer of hkbase')
                 headers = {}
                 self.set_hkkbase_options(headers)
                 encoded_listening_path = urllib.parse.quote_plus(listening_path)
@@ -68,6 +70,7 @@ class RESTObserverClient(ObserverClient):
                     return
                 elif not response.ok:
                     raise Exception(f'[{response.status_code}] {response.content}')
+                logging.info('registered as observer of hkbase')
         except Exception as e:
             traceback.print_exc()
             logging.error(e)

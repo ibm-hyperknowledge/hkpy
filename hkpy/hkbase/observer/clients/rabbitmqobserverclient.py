@@ -40,13 +40,12 @@ class RabbitMQObserverClient(ObserverClient):
 
     def init(self):
         try:
-
+            logging.info("initializing RabbitMQ observer client")
             queue_name = ''
             if self.uses_specialized_observer():
-                logging.info('registering as observer of hkbase observer service')
                 queue_name = self.register_observer()
             else:
-                logging.info('registering as observer of hkbase')
+                logging.info('registered as observer of hkbase')
 
             host, port = self._parse_config()
             connection_params = {}
