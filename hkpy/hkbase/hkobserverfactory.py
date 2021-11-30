@@ -5,6 +5,7 @@
 
 import inspect
 import logging
+import os
 from os.path import dirname, isfile, join
 import traceback
 import glob
@@ -47,14 +48,23 @@ def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
         is_observer_service = observer_options.get('isObserverService', 'false').lower() == 'true'
         observer_service_params = {}
         if not is_observer_service:
-            observer_service_url = observer_options.get('hkbaseObserverServiceUrl', None)
-            observer_service_url = info.get('hkbaseObserverServiceUrl', observer_service_url)
+            observer_service_default_url = observer_options.get('hkbaseObserverServiceUrl', None)
+            observer_service_params['defaultUrl'] = info.get('hkbaseObserverServiceUrl', observer_service_default_url)
+            observer_service_external_url = observer_options.get('hkbaseObserverServiceExternalUrl', None)
+            observer_service_params['externalUrl'] = info.get('hkbaseObserverServiceExternalUrl', observer_service_external_url)
             observer_configuration = observer_options.get('hkbaseObserverConfiguration', None)
             observer_configuration = info.get('hkbaseObserverConfiguration', observer_configuration)
-            observer_service_params['url'] = observer_service_url
             observer_service_params['observerConfiguration'] = observer_configuration
 
-        if observer_service_params.get('url', False) and observer_service_params.get('observerConfiguration', False):
+        if observer_service_params.get('defaultUrl', False) and observer_service_params.get('observerConfiguration', False):
+            default_url_with_protocol = observer_service_params['defaultUrl'].replace('http://', '').replace('https://', '')
+            default_url_components = default_url_with_protocol.split(':')
+            default_host = default_url_components[0]
+            ping_result = os.system("ping -c 1 " + default_host)
+            if ping_result == 0 or observer_service_params.get('externalUrl', None) is None:
+                observer_service_params['url'] = observer_service_params['defaultUrl']
+            else:
+                observer_service_params['url'] = observer_service_params['externalUrl']
             response = requests.get(f"{observer_service_params['url']}/observer/info")
             if not response.ok:
                 raise Exception(f'[Code: {response.status_code}] {response.content}')
