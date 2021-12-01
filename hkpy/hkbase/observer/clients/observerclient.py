@@ -20,6 +20,9 @@ class ObserverClient:
     def init(self):
         pass
 
+    def deinit(self):
+        pass
+
     def add_handler(self, callback):
         if callable(callback):
             self._handlers.append(callback)

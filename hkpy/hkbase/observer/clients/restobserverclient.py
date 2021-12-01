@@ -37,6 +37,7 @@ class RESTObserverClient(ObserverClient):
         self._port = observer_options.get('port', 0)
         self._address = observer_options.get('address', 'localhost')
         self._flask_app = flask_app
+        self._listening_path = None
 
         if self._port == 0:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,18 +45,22 @@ class RESTObserverClient(ObserverClient):
             self._port = sock.getsockname()[1]
             sock.close()
 
+        self._use_internal_flask_app = False
         if self._flask_app is None:
-            self._flask_app = Flask(__name__)
-            CORS(self._flask_app)
-            thread = Thread(target=self._flask_app.run, kwargs=dict(host=self._address, port=self._port))
-            thread.start()
-            logging.info(f"Flask Server initialized at port {self._port} for receiving callback requests of "
-                         f"HKBase notifications")
+            self._use_internal_flask_app = True
 
     def init(self):
         logging.info("initializing REST observer client")
         try:
+            if self._use_internal_flask_app:
+                self._flask_app = Flask(__name__)
+                CORS(self._flask_app)
+                thread = Thread(target=self._flask_app.run, kwargs=dict(host=self._address, port=self._port))
+                thread.start()
+                logging.info(f"Flask Server initialized at port {self._port} for receiving callback requests of "
+                             f"HKBase notifications")
             listening_path = f"http://{self._address}:{self._port}"
+            self._listening_path = listening_path
             self.setup_endpoints()
             if self.uses_specialized_observer():
                 self._observer_configuration['callbackEndpoint'] = listening_path
@@ -75,6 +80,27 @@ class RESTObserverClient(ObserverClient):
             traceback.print_exc()
             logging.error(e)
             raise e
+
+    def deinit(self):
+        logging.info('Deiniting observer')
+        if self._observer_id is not None:
+            self.unregister_observer()
+        elif self._listening_path is not None:
+            headers = {}
+            self.set_hkkbase_options(headers)
+            encoded_listening_path = urllib.parse.quote_plus(self._listening_path)
+            response = requests.delete(f'{self._hkbase.url}/observer/{encoded_listening_path}', headers=headers)
+            response.raise_for_status()
+            self._listening_path = None
+        if self._use_internal_flask_app and self._flask_app is not None:
+            shutdown_func = request.environ.get('werkzeug.server.shutdown')
+            if shutdown_func is None:
+                raise RuntimeError('Not running werkzeug')
+            shutdown_func()
+            logging.info(f'Flask Server at port ${self._port} was stopped')
+        self._flask_app = None
+        self._use_internal_flask_app = False
+        logging.info('Observer deinited')
 
     def setup_endpoints(self):
         """

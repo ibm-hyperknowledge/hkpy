@@ -37,6 +37,10 @@ class RabbitMQObserverClient(ObserverClient):
             'exchangeOptions': info.get('exchangeOptions', {}),
             'certificate': info.get('certificate', observer_options.get('certificate', None)),
         }
+        self._channel = None
+        self._connection = None
+        self._consumer_id = None
+        self._queue_name = None
 
     def init(self):
         try:
@@ -76,13 +80,31 @@ class RabbitMQObserverClient(ObserverClient):
                     traceback.print_exc()
                     logging.error(e)
 
-            channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
-
+            self._consumer_id = channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+            self._channel = channel
+            self._queue_name = queue_name
+            self._connection = connection
             logging.info(f" [*] Waiting for messages in {queue_name}. To exit press CTRL+C")
             channel.start_consuming()
         except Exception as e:
             traceback.print_exc()
             logging.error(e)
+
+    def deinit(self):
+        logging.info("Deiniting observer")
+        self._channel.basic_cancel(self._consumer_id)
+        self._consumer_id = None
+        logging.info('canceled AMQP consumer')
+        if self._observer_id is None:
+            self._channel.queue_delete(self._queue_name)
+            logging.info(f"removed queue {self._queue_name}")
+            self._queue_name = None
+        else:
+            self.unregister_observer()
+        self._channel.close()
+        self._channel = None
+        self._connection.close()
+        self._connection = None
 
     def _parse_config(self):
         url_with_protocol = self._config['broker'].replace('amqp://', '')
