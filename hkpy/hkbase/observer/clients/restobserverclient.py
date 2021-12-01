@@ -91,15 +91,14 @@ class RESTObserverClient(ObserverClient):
             encoded_listening_path = urllib.parse.quote_plus(self._listening_path)
             response = requests.delete(f'{self._hkbase.url}/observer/{encoded_listening_path}', headers=headers)
             response.raise_for_status()
-            self._listening_path = None
         if self._use_internal_flask_app and self._flask_app is not None:
-            shutdown_func = request.environ.get('werkzeug.server.shutdown')
-            if shutdown_func is None:
-                raise RuntimeError('Not running werkzeug')
-            shutdown_func()
-            logging.info(f'Flask Server at port ${self._port} was stopped')
+            response = requests.post(f'{self._listening_path}/shutdown')
+            response.raise_for_status()
+            logging.info(f'Flask Server at port {self._port} was stopped')
+        self._listening_path = None
         self._flask_app = None
         self._use_internal_flask_app = False
+        self._port = None
         logging.info('Observer deinited')
 
     def setup_endpoints(self):
@@ -153,8 +152,16 @@ class RESTObserverClient(ObserverClient):
             entities_callback('delete', repo_name, entities)
             return jsonify(None), 200
 
+        def shutdown_callback():
+            shutdown_function = request.environ.get('werkzeug.server.shutdown')
+            if shutdown_function is None:
+                raise RuntimeError('Not running with the Werkzeug Server')
+            shutdown_function()
+            return jsonify(None), 200
+
         self._flask_app.route(f'/repository/<repo_name>', methods=['POST'])(created_repository_callback)
         self._flask_app.route(f'/repository/<repo_name>', methods=['DELETE'])(deleted_repository_callback)
         self._flask_app.route(f'/repository/<repo_name>/entity', methods=['POST'])(added_entities_callback)
         self._flask_app.route(f'/repository/<repo_name>/entity', methods=['PUT'])(changed_entities_callback)
         self._flask_app.route(f'/repository/<repo_name>/entity', methods=['DELETE'])(removed_entities_callback)
+        self._flask_app.route(f'/shutdown', methods=['POST'])(shutdown_callback)
