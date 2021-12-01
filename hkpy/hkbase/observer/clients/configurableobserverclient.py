@@ -61,7 +61,7 @@ class ConfigurableObserverClient(ObserverClient):
         headers = {'content-type': 'application/json'}
         self.set_hkkbase_options(headers)
         logging.info(self._observer_configuration)
-        response = requests.delete(f"{self._observer_service_url}/observer", headers=headers)
+        response = requests.delete(f"{self._observer_service_url}/observer/{self._observer_id}", headers=headers)
         if not response.ok:
             raise Exception(f'[{response.status_code}] {response.content}')
         logging.info(f'unregistered observer {self._observer_id}')
