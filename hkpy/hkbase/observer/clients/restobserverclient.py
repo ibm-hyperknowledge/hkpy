@@ -29,6 +29,19 @@ class RESTObserverClient(ObserverClient):
                  observer_service_params=None,
                  flask_app: Optional = None
                  ):
+        """
+        Parameters
+        ----------
+        hkbase: (HKBase) HKBase object that the client will observe
+        info: (Dict) info observer info from hkbase
+        observer_options: (Dict) observer initialization options
+        observer_options['port']: (int) port te be used when instantiating flask app for receiving callback requests
+        observer_options['address']: (str) address use when instantiating flask app for receiving callback requests
+        hkbase_options: (Dict) options to be used when communicating with hkbase
+        observer_service_params: (Dict) observer service parameters (if using specialized observer)
+        flask_app: (Flask) flask application to be used for registering notification callback endpoints
+        if None is provided this client will instantiate a flask app automatically.
+        """
         super().__init__(hkbase, hkbase_options, observer_service_params)
 
         if observer_options is None:

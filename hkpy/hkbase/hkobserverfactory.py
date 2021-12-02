@@ -28,6 +28,38 @@ for module_filepath in modules_filepaths:
 
 
 def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
+    """
+    Instantiate an observer client.
+    This method will the target HKBase which observer configuration it supports (REST or RabbitMQ)
+    and will instantiate the appropriate client with the provided configurations.
+
+    Parameters
+    ----------
+    hkbase: (HKBase) HKBase object that the client will observe
+    observer_options: (Dict)  Observer options that are used to initialize the observer client.
+    observer_options['hkbaseObserverService']: (bool) if true, the factory method will assume that it
+    is being called from the hkbaseObserverService and will ignore hkbaseObserverServiceUrl,
+    hkbaseObserverServiceExternalUrl and hkbaseObserverConfiguration options.
+    observer_options['hkbaseObserverService']: (str) url of the hkbaseObserverService to be used
+    if hkbase does not inform one.
+    observer_options['hkbaseObserverServiceExternalUrl']: (str) external url of the hkbaseObserverService to be used if
+    hkbaseObserverServiceUrl is not accessible to client and hkbase does not provide one.
+    observer_options['hkbaseObserverConfiguration']: (Dict) the ObserverConfiguration of this client, that includes
+    which notification filters should be applied and the desired notification format
+    The definition of ObserverConfiguration fields and possible filters is provided in OpenAPI/Swagger format at:
+    "https://github.ibm.com/keg-core/hkbase-observer/blob/main/docs/spec.yml" or acessing the
+    hkbaseObserverServiceUrl through a browser (Swagger UI)
+    observer_options['certificate']: (str) if hkbase uses RabbitMQ notifcation, AMQP certificate can be passed
+    observer_options['port']: (int) if hkbase uses REST notification, the port te be used when instantiating flask app
+    for receiving callback requests can be passed
+    observer_options['address']: (str) if hkbase uses REST notification, the address use when instantiating flask app
+    for receiving callback requests can be passed
+    hkbase_options: (Dict) options that sould be passed when making requests to hkbase (e.g., headers)
+
+    Returns
+    -------
+    (ObserverClient) instance of ObserverClient or one of its subclasses
+    """
     if hkbase_options is None:
         hkbase_options = {}
     if observer_options is None:

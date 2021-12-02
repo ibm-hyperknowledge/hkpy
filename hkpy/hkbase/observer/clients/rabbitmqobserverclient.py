@@ -25,6 +25,21 @@ class RabbitMQObserverClient(ObserverClient):
                  hkbase_options=None,
                  observer_service_params=None
                  ):
+        """
+        Parameters
+        ----------
+        hkbase: (HKBase) HKBase object that the client will observe
+        info: (Dict) info observer info from hkbase
+        info['broker']: (str) amqp broker default address
+        info['brokerExternal']: (str) amqp broker external address to be used if default address is not accessible
+        info['exchangeName']: (str) name of the RabbitMQ exchange where hkbase will publish messages
+        info['exchangeOptions']: (Dict) additional options to be used when connecting to hkbase echange
+        info['certificate']: (str) RabbitMQ connection certificate (if needed)
+        observer_options: (Dict) observer initialization options
+        observer_options['certificate']: (str) RabbitMQ connection certificate (if needed)
+        hkbase_options: (Dict) options to be used when communicating with hkbase
+        observer_service_params: (Dict) observer service parameters (if using specialized observer)
+        """
         super().__init__(hkbase, hkbase_options, observer_service_params)
 
         if observer_options is None:

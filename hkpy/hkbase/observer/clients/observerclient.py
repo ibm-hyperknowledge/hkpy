@@ -15,18 +15,47 @@ class ObserverClient:
         self._handlers = []
 
     def get_type(self):
+        """
+        Retrieves client type
+
+        Returns
+        -------
+        (str) client type
+        """
         return self.TYPE_KEY
 
     def init(self):
+        """
+        Initialize client and start calling handlers when notifications are received
+        """
         pass
 
     def deinit(self):
+        """
+        Deinitilize client and stop receiving notifications
+        """
         pass
 
     def add_handler(self, callback):
+        """
+        Add handler function to be called when notifications are received
+        Can be called more than once
+        All added handlers are called for all notifications recieved
+
+        Parameters
+        ----------
+        callback: (callable) handler function to be called when notifications are received
+        """
         if callable(callback):
             self._handlers.append(callback)
 
     def notify(self, notification):
+        """
+        Calls every handler passing a notification as single parameter
+
+        Parameters
+        ----------
+        notification: (Dict) notification received from HKBase or HKBase Observer Service
+        """
         for handler in self._handlers:
             handler(notification)

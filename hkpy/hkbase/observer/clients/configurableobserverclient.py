@@ -19,6 +19,24 @@ class ConfigurableObserverClient(ObserverClient):
                  hkbase_options=None,
                  observer_service_options=None
                  ):
+        """
+         Parameters
+        ----------
+        hkbase: (HKBase) HKBase object that the client will observe
+        hkbase_options: (Dict) options to be used when communicating with hkbase
+        observer_service_params: (Dict) observer service parameters (if using specialized observer)
+        observer_service_params['url']: (str) url of the hkbase observer service
+        observer_service_params['observerConfiguration']: (Dict) the ObserverConfiguration of this client,
+        that includes which notification filters should be applied and the desired notification format.
+        The definition of ObserverConfiguration fields and possible filters is provided in OpenAPI/Swagger format at:
+        "https://github.ibm.com/keg-core/hkbase-observer/blob/main/docs/spec.yml" or acessing the
+        hkbaseObserverServiceUrl through a browser (Swagger UI)
+        observer_service_params['heartbeatInterval']: (int) heartbeat interval of the hkbase observer service
+        if this interval is greater than 0, a recurrent heartbeat function will be set when a specialized observer
+        is initialized. This function makes a request to the heartbeat endpoint of the hkbase observer service to
+        reset the configuration timeout if the server stops receiving the heartbeat for this observer configuration
+        it will be erased after it times out and the notifications will stop being emmited for its clients
+        """
         super().__init__(hkbase)
 
         if observer_service_options is None:
