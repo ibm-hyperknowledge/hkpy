@@ -3,7 +3,7 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import requests
 from abc import abstractmethod
@@ -16,7 +16,17 @@ from ..oops import HKBError, HKpyError
 from ..utils import constants
 from ..utils import response_validator
 
-__all__ = ['HKBase']
+__all__ = ['HKBase', 'HKInfo']
+
+class HKInfo:
+    def __init__(self, name: str, query_languages: List[str]):
+        self.name = name
+        self.query_languages = query_languages
+
+    @classmethod
+    def from_dict(cls, dict_: Dict) -> 'HKInfo':
+        return cls(name=dict_['name'], query_languages=dict_['queryLanguages'])
+
 
 class HKBase(object):
     """ This class establishes a communication interface with a hkbase.
@@ -31,7 +41,7 @@ class HKBase(object):
         api_version: (str) HKBase api version
         auth: (Optional[str]) HKBase authentication token
         """
-        
+
         self.url = url
         self.api_version = api_version
         self._base_uri = f'{self.url}/{self.api_version}' if api_version else self.url
@@ -83,7 +93,7 @@ class HKBase(object):
             raise err
         except Exception as err:
             raise HKpyError(message='Repository not created.', error=err)
-    
+
     def delete_repository(self, name: str) -> None:
         """ Delete a existing hkbase's repository.
 
@@ -143,12 +153,13 @@ class HKBase(object):
         try:
             response = requests.get(url=self._repository_uri, verify=constants.SSL_VERIFY, headers=self._headers)
             _, repositories = response_validator(response=response)
-            
+
             return [self.connect_repository(name=repo) for repo in repositories]
         except HKBError as err:
             raise err
         except Exception as err:
             raise HKpyError(message='Could not retrieve existing repositories.', error=err)
+
 
     @staticmethod
     def get_auth_token(
@@ -177,3 +188,12 @@ class HKBase(object):
                 return jwt.encode({}, secret)
             return jwt.encode({'exp': exp}, secret)
         return ''
+
+    def info(self) -> HKInfo:
+        url = f'{self._base_uri}/info'
+
+        response = requests.get(url=url, headers=self._headers, verify=constants.SSL_VERIFY)
+        _, data = response_validator(response=response)
+
+        return HKInfo.from_dict(data)
+
