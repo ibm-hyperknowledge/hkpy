@@ -82,6 +82,7 @@ class ConfigurableObserverClient(ObserverClient):
         response = requests.delete(f"{self._observer_service_url}/observer/{self._observer_id}", headers=headers)
         if not response.ok:
             raise Exception(f'[{response.status_code}] {response.content}')
+        signal.alarm(0)
         logging.info(f'unregistered observer {self._observer_id}')
         self._observer_id = None
 

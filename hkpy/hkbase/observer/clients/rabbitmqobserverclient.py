@@ -11,11 +11,11 @@ import pika
 import pika.exceptions
 from threading import Thread
 
-from hkpy.hkbase.observer.clients.configurableobserverclient import ConfigurableObserverClient as ObserverClient
+from hkpy.hkbase.observer.clients.configurableobserverclient import ConfigurableObserverClient
 from hkpy.hkbase.observer.clients.configurableobserverclient import HKBase
 
 
-class RabbitMQObserverClient(ObserverClient):
+class RabbitMQObserverClient(ConfigurableObserverClient):
     TYPE_KEY = 'rabbitmq'
 
     def __init__(self,
@@ -119,6 +119,9 @@ class RabbitMQObserverClient(ObserverClient):
 
     def deinit(self):
         logging.info("Deiniting observer")
+        if self._channel is None:
+            logging.info("Observer already deinited")
+            return
         try:
             self._channel.basic_cancel(self._consumer_id)
         except pika.exceptions.StreamLostError as e:

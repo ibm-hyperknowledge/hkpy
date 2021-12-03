@@ -14,17 +14,25 @@ import importlib.machinery
 
 from hkpy.hkbase.observer.clients.observerclient import HKBase
 
-clients_by_key = {}
-clients_dirpath = join(dirname(__file__), 'observer', 'clients')
-modules_filepaths = glob.glob(join(clients_dirpath, "*.py"))
-for module_filepath in modules_filepaths:
-    if isfile(module_filepath) and not module_filepath.endswith('__init__.py'):
-        module_name = f"{module_filepath.replace(clients_dirpath, '').replace('.py', '').replace('/', '')}"
-        loader = importlib.machinery.SourceFileLoader(module_name, module_filepath)
-        module = loader.load_module(module_name)
-        for class_name, klass in inspect.getmembers(module, inspect.isclass):
-            if hasattr(klass, 'TYPE_KEY'):
-                clients_by_key[klass.TYPE_KEY] = klass
+__all__ = ['create_observer']
+
+
+def initialize_clients_by_key():
+    clients_by_key_dict = {}
+    clients_dirpath = join(dirname(__file__), 'observer', 'clients')
+    modules_filepaths = glob.glob(join(clients_dirpath, "*.py"))
+    for module_filepath in modules_filepaths:
+        if isfile(module_filepath) and not module_filepath.endswith('__init__.py'):
+            module_name = f"{module_filepath.replace(clients_dirpath, '').replace('.py', '').replace('/', '')}"
+            loader = importlib.machinery.SourceFileLoader(module_name, module_filepath)
+            module = loader.load_module(module_name)
+            for class_name, klass in inspect.getmembers(module, inspect.isclass):
+                if hasattr(klass, 'TYPE_KEY'):
+                    clients_by_key_dict[klass.TYPE_KEY] = klass
+    return clients_by_key_dict
+
+
+clients_by_key = initialize_clients_by_key()
 
 
 def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):

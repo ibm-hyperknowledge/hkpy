@@ -14,11 +14,11 @@ from threading import Thread
 import logging
 import socket
 
-from hkpy.hkbase.observer.clients.configurableobserverclient import ConfigurableObserverClient as ObserverClient
+from hkpy.hkbase.observer.clients.configurableobserverclient import ConfigurableObserverClient
 from hkpy.hkbase.observer.clients.configurableobserverclient import HKBase
 
 
-class RESTObserverClient(ObserverClient):
+class RESTObserverClient(ConfigurableObserverClient):
     TYPE_KEY = 'rest'
 
     def __init__(self,

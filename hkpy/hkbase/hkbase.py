@@ -18,11 +18,12 @@ from ..utils import response_validator
 
 __all__ = ['HKBase']
 
+
 class HKBase(object):
     """ This class establishes a communication interface with a hkbase.
     """
 
-    def __init__(self, url: str, api_version: str=None, auth: Optional[str]=None, secret: Optional[str]=None):
+    def __init__(self, url: str, api_version: str=None, auth: Optional[str]=None):
         """ Initialize an instance of HKBase class.
     
         Parameters
