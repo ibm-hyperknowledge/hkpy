@@ -4,10 +4,11 @@
 ###
 
 from typing import TypeVar
+from abc import ABC, abstractmethod
 HKBase = TypeVar('HKBase')
 
 
-class ObserverClient:
+class ObserverClient(ABC):
     TYPE_KEY = 'default'
 
     def __init__(self, hkbase: HKBase):
@@ -24,12 +25,14 @@ class ObserverClient:
         """
         return self.TYPE_KEY
 
+    @abstractmethod
     def init(self):
         """
         Initialize client and start calling handlers when notifications are received
         """
         pass
 
+    @abstractmethod
     def deinit(self):
         """
         Deinitilize client and stop receiving notifications

@@ -7,11 +7,12 @@ import traceback
 import logging
 import requests
 import signal
+from abc import ABC
 
-from hkpy.hkbase.observer.clients.observerclient import ObserverClient, HKBase
+from hkpy.hkbase.observer.clients.observerclient import HKBase
 
 
-class ConfigurableObserverClient(ObserverClient):
+class ConfigurableObserverClient(ABC):
     TYPE_KEY = 'configurable'
 
     def __init__(self,
