@@ -85,7 +85,7 @@ def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
         if klass is None:
             raise Exception(f"Cannot create a client for observer: {info['type']}")
 
-        is_observer_service = observer_options.get('isObserverService', 'false').lower() == 'true'
+        is_observer_service = observer_options.get('isObserverService', False)
         observer_service_params = {}
         if not is_observer_service:
             observer_service_default_url = observer_options.get('hkbaseObserverServiceUrl', None)
