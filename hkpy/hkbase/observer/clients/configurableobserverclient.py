@@ -9,10 +9,10 @@ import requests
 import signal
 from abc import ABC
 
-from hkpy.hkbase.observer.clients.observerclient import HKBase
+from hkpy.hkbase.observer.clients.observerclient import ObserverClient, HKBase
 
 
-class ConfigurableObserverClient(ABC):
+class ConfigurableObserverClient(ObserverClient):
     """
     Abstract class that defines the behaviour of a configurable observer client
     """

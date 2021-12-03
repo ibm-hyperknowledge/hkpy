@@ -115,5 +115,4 @@ def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
 
     except:
         traceback.print_exc()
-        logging.error('Creating a default client')
-        return clients_by_key['default'](hkbase, info, observer_options)
+        logging.error('Could not initialize observer client')
