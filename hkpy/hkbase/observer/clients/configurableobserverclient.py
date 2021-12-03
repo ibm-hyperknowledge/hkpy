@@ -13,6 +13,9 @@ from hkpy.hkbase.observer.clients.observerclient import HKBase
 
 
 class ConfigurableObserverClient(ABC):
+    """
+    Abstract class that defines the behaviour of a configurable observer client
+    """
     TYPE_KEY = 'configurable'
 
     def __init__(self,

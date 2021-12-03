@@ -9,6 +9,9 @@ HKBase = TypeVar('HKBase')
 
 
 class ObserverClient(ABC):
+    """
+    Abstract class with basic behaviour and API of an observer client
+    """
     TYPE_KEY = 'default'
 
     def __init__(self, hkbase: HKBase):
