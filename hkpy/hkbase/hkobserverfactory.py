@@ -38,7 +38,7 @@ clients_by_key = initialize_clients_by_key()
 def create_observer(hkbase: HKBase, observer_options=None, hkbase_options=None):
     """
     Instantiate an observer client.
-    This method will the target HKBase which observer configuration it supports (REST or RabbitMQ)
+    This method will ask the target HKBase which observer configuration it supports (REST or RabbitMQ)
     and will instantiate the appropriate client with the provided configurations.
 
     Parameters
