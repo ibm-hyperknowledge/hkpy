@@ -51,6 +51,7 @@ class RabbitMQObserverClient(ConfigurableObserverClient):
             'broker': info.get('broker', None),
             'brokerExternal': info.get('brokerExternal', None),
             'exchangeName': info.get('exchangeName', None),
+            'defaultExchangeName': info.get('exchangeName', None),
             'exchangeOptions': info.get('exchangeOptions', {}),
             'certificate': info.get('certificate', observer_options.get('certificate', None)),
         }
@@ -63,9 +64,9 @@ class RabbitMQObserverClient(ConfigurableObserverClient):
     def init(self):
         try:
             logging.info("initializing RabbitMQ observer client")
-            queue_name = ''
+            exchange_name = self._config.get('exchangeName', '')
             if self.uses_specialized_observer():
-                queue_name = self.register_observer()
+                exchange_name = self.register_observer()
             else:
                 logging.info('registered as observer of hkbase')
 
@@ -79,11 +80,10 @@ class RabbitMQObserverClient(ConfigurableObserverClient):
 
             connection = pika.BlockingConnection(pika.ConnectionParameters(**connection_params))
             channel = connection.channel()
-            result = channel.queue_declare(queue=queue_name, **self._config['exchangeOptions'])
+            result = channel.queue_declare(queue='', **self._config['exchangeOptions'])
             queue_name = result.method.queue
-            channel.queue_bind(queue_name, exchange=self._config['exchangeName'])
-
-            logging.info(f"Bound to exchange {self._config['exchangeName']}")
+            channel.queue_bind(queue_name, exchange=exchange_name)
+            logging.info(f"Bound to exchange {exchange_name}")
 
             observer_id = self._observer_id
 
@@ -111,6 +111,7 @@ class RabbitMQObserverClient(ConfigurableObserverClient):
             self._channel = channel
             self._queue_name = queue_name
             self._connection = connection
+            self._config['exchangeName'] = exchange_name
             self._consumer_thread = Thread(target=consumer)
             self._consumer_thread.start()
         except Exception as e:
@@ -127,15 +128,15 @@ class RabbitMQObserverClient(ConfigurableObserverClient):
         except pika.exceptions.StreamLostError as e:
             logging.warning(e)
         logging.info('canceled AMQP consumer')
-        if self._observer_id is None:
-            try:
-                self._channel.queue_delete(self._queue_name)
-            except pika.exceptions.ChannelWrongStateError as e:
-                logging.warning(e)
-            logging.info(f"removed queue {self._queue_name}")
-            self._queue_name = None
-        else:
+        if self._observer_id is not None:
             self.unregister_observer()
+        try:
+            self._channel.queue_delete(self._queue_name)
+        except pika.exceptions.ChannelWrongStateError as e:
+            logging.warning(e)
+        logging.info(f"removed queue {self._queue_name}")
+        self._queue_name = None
+        self._config['exchangeName'] = self._config['defaultExchangeName']
         self._consumer_id = None
 
         try:
