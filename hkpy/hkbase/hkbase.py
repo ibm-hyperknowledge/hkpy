@@ -7,6 +7,8 @@ from typing import List, Optional, Dict
 
 import requests
 from abc import abstractmethod
+import jwt
+import datetime
 
 from . import HKRepository
 from ..hklib import hkfy
@@ -24,6 +26,7 @@ class HKInfo:
     @classmethod
     def from_dict(cls, dict_: Dict) -> 'HKInfo':
         return cls(name=dict_['name'], query_languages=dict_['queryLanguages'])
+
 
 
 class HKBase(object):
@@ -158,6 +161,35 @@ class HKBase(object):
         except Exception as err:
             raise HKpyError(message='Could not retrieve existing repositories.', error=err)
 
+
+    @staticmethod
+    def get_auth_token(
+            secret: str,
+            exp=datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(milliseconds=2 * 60)
+    ):
+        """ Generate auth token with jwt
+
+        Parameters
+        ----------
+        secret : (str) secret used to sign the token
+        exp: The “exp” (expiration time) claim identifies the expiration time on
+        or after which the JWT MUST NOT be accepted for processing.
+        The processing of the “exp” claim requires that the current date/time MUST
+        be before the expiration date/time listed in the “exp” claim. Implementers MAY provide for some small leeway,
+        usually no more than a few minutes, to account for clock skew.
+        Its value MUST be a number containing a NumericDate value. Use of this claim is OPTIONAL
+
+        Returns
+        -------
+        (str) auth token
+        """
+
+        if secret:
+            if exp:
+                return jwt.encode({}, secret)
+            return jwt.encode({'exp': exp}, secret)
+        return ''
+
     def info(self) -> HKInfo:
         url = f'{self._base_uri}/info'
 
@@ -165,3 +197,4 @@ class HKBase(object):
         _, data = response_validator(response=response)
 
         return HKInfo.from_dict(data)
+

@@ -28,7 +28,12 @@ AUTHOR_EMAIL = 'mmoreno@br.ibm.com'
 KEYWORDS = 'Hyperknowlede, Knowledge Engineering'
 REQUIRES_PYTHON = '>=3.6'
 REQUIRED = [
-    'requests'
+    'requests',
+    'pika',
+    'Flask',
+    'flask-cors',
+    'PyJWT',
+    'urllib3'
 ]
 
 try:

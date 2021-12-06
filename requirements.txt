@@ -1,5 +1,9 @@
 certifi==2019.11.28
 chardet==3.0.4
 idna==2.9
-requests==2.23.0
+requests==2.26.0
 urllib3==1.26.5
+pika==1.2.0
+Flask==2.0.1
+flask-cors==3.0.10
+PyJWT==2.3.0
