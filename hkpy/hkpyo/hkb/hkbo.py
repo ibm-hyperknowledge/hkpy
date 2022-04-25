@@ -48,9 +48,9 @@ class HKOContextManagerHKB(HKOContextManager):
     def readHKOContext(self, iri: str) -> HKOContext:
 
         if iri is None:
-            hkg_contexts = self.repo.get_entities(f"""[id=null]""")
+            hkg_contexts = self.repo.filter_entities(f"""[id=null]""")
         else:
-            hkg_contexts = self.repo.get_entities(f"""[id="{encode_iri(iri)}"]""")
+            hkg_contexts = self.repo.filter_entities(f"""[id="{encode_iri(iri)}"]""")
 
         if len(hkg_contexts) == 0:
             raise Exception("Context IRI not found.")
@@ -61,7 +61,7 @@ class HKOContextManagerHKB(HKOContextManager):
 
         hko_pcontext = HKOContext(decode_iri(hkg_context.id_), HKOContextExpandable(iri=decode_iri(hkg_context.parent)))
 
-        hkg_context_graph = self.repo.get_entities(f"""[parent="{encode_iri(iri)}"]""")
+        hkg_context_graph = self.repo.filter_entities(f"""[parent="{encode_iri(iri)}"]""")
 
         #
         # cb = self.getHKOContextBuilder(hko_pcontext)
