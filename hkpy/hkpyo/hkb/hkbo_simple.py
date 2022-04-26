@@ -11,14 +11,15 @@ from hkpy.hkpyo.converters.HKOReaderHKG import HKOContextExpandable, HKOReaderHK
 from hkpy.hkpyo.model import *
 from hkpy.hkpyo.converters.utils import encode_iri, decode_iri
 
+
 def load_HKOContext_from_hkb(iri: str, repo : HKRepository) -> HKOContext:
 
     mgr = HKOContextManager.get_global_context_manager()
 
     if iri is None:
-        hkg_contexts = repo.get_entities(f"""[id=null]""")
+        hkg_contexts = repo.filter_entities(f"""[id=null]""")
     else:
-        hkg_contexts = repo.get_entities(f"""[id="{encode_iri(iri)}"]""")
+        hkg_contexts = repo.filter_entities(f"""[id="{encode_iri(iri)}"]""")
 
     if len(hkg_contexts) == 0:
         raise Exception("Context IRI not found.")
@@ -29,7 +30,7 @@ def load_HKOContext_from_hkb(iri: str, repo : HKRepository) -> HKOContext:
 
     hko_pcontext = mgr.createHKOContext(decode_iri(hkg_context.id_), HKOContextExpandable(iri=hkg_context.parent))
 
-    hkg_context_graph = repo.get_entities(f"""[parent="{encode_iri(iri)}"]""")
+    hkg_context_graph = repo.filter_entities(f"""[parent="{encode_iri(iri)}"]""")
     print("Loading ", len(hkg_context_graph), " entities from HKB")
 
     #
@@ -38,8 +39,8 @@ def load_HKOContext_from_hkb(iri: str, repo : HKRepository) -> HKOContext:
     reader = HKOReaderHKG()
     reader.readHKOintoContext(hkg_context_graph, mgr.getHKOContextBuilder(hko_pcontext))
 
-
     return hko_pcontext
+
 
 def save_HKOContext_to_hkb(context : HKOContext, repo : HKRepository):
     writer = HKOWriterHKG()

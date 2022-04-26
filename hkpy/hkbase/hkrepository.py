@@ -90,19 +90,19 @@ class HKRepository(object):
         response = requests.put(url=url, data=json.dumps(entities), headers=headers)
         response_validator(response=response)
 
-    def get_entities(self, filter_: Union[str, Dict]) -> List[HKEntity]:
+    def filter_entities(self, filter_: Union[str, Dict]) -> List[HKEntity]:
         """ Get entities filtered by a css filter or json filter.
 
         Parameters
         ----------
-        filter : (Union[str, Dict]) retrieval filter
+        filter_ : (Union[str, Dict]) retrieval filter
 
         Returns
         -------
         (List[HKEntity]) list of retrieved entities
         """
 
-        url= f'{self.base._repository_uri}/{self.name}/entity'
+        url = f'{self.base._repository_uri}/{self.name}/entity/filter'
 
         try:
             if isinstance(filter_, str):
@@ -128,6 +128,34 @@ class HKRepository(object):
                 response = requests.post(url=url, data=json.dumps(filter_), headers=self._headers)
             else:
                 raise HKpyError(message='Invalid filter type.')
+
+            _, data = response_validator(response=response)
+        except (HKBError, HKpyError) as err:
+            raise err
+        except Exception as err:
+            raise HKBError(message='Could not retrieve the entities.', error=err)
+
+        return [hkfy(entity) for entity in data.values()]
+
+    def get_entities(self, ids: List[Union[str, Dict]]) -> List[HKEntity]:
+        """ Get entities by an array of ids, where the id can be a string or an object containing remote information of
+         virtual entities.
+
+        Parameters
+        ----------
+        ids : List[Union[str, Dict]] entities identifiers
+
+        Returns
+        -------
+        (List[HKEntity]) list of retrieved entities
+        """
+        url = f'{self.base._repository_uri}/{self.name}/entity'
+
+        try:
+            if isinstance(ids, list):
+                response = requests.post(url=url, data=json.dumps(ids), headers=self._headers)
+            else:
+                raise HKpyError(message='Invalid id type .')
 
             _, data = response_validator(response=response)
         except (HKBError, HKpyError) as err:
