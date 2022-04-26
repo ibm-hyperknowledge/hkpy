@@ -1,6 +1,13 @@
-# hkpy: a Python Framework for Hyperknowledge
+# HKPy: a Python Framework for Hyperknowledge
 
 ## Getting Started
+
+### Install
+
+To use HKPy in your project, you can install using:
+```
+pip install hkpy
+```
 
 ### Connecting to a [Hyperknowledge Base](#)
 
