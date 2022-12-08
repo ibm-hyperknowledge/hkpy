@@ -9,10 +9,13 @@ import os
 import copy
 import json
 import requests
+from urllib.parse import quote
 from io import TextIOWrapper, BufferedReader, BufferedIOBase
 
 from . import HKTransaction, generate_id, constants
 from ..hklib import hkfy, HKEntity, HKContext
+from ..hklib.fi.fi import FI
+from ..hklib.node import HKDataNode
 from ..oops import HKBError, HKpyError
 from ..utils import response_validator
 from ..common.result_set import ResultSet
@@ -73,16 +76,21 @@ class HKRepository(object):
 
         url = f'{self.base._repository_uri}/{self.name}/entity/'
 
+        filtered_data_objects = []
+
         if not isinstance(entities, (list,tuple)):
             entities = [entities]
-
+        
         if isinstance(entities[0], HKEntity):
             entities = [x.to_dict() for x in entities]
         elif isinstance(entities[0], dict):
             pass
-            # entities = list(map(hkfy, entities))
         else:
             raise ValueError
+
+        data_entities, entities = self.filter_data_entities(entities)
+        if data_entities:
+            self.add_data_entities(data_entities)
 
         headers = copy.deepcopy(self._headers)
         headers['Content-Type'] = 'application/json'
@@ -90,12 +98,74 @@ class HKRepository(object):
         response = requests.put(url=url, data=json.dumps(entities), headers=headers)
         response_validator(response=response)
 
-    def filter_entities(self, filter_: Union[str, Dict]) -> List[HKEntity]:
+    def filter_data_entities(self, entities: Union[HKEntity, List[HKEntity]]):
+        """ filter the entities with raw data.
+        Return two lists:
+            dataentities: entities with raw data.
+            nondataentites: entities without raw data.
+        
+        Parameters
+        ----------
+        entities : (Union[HKDataNode, List[HKDataNode]]) entity or list of entities
+        transaction : (Optional[HKTransaction]) connection transaction
+
+        Returns
+        -------
+        dataentities: (List[HKEntity]) list of entities with raw data
+        nondataentites: (List[HKEntity]) list of entities without raw data
+        """
+        
+        dataentities = []
+        nondataentites = []
+        for entity in entities:
+            if 'raw_data' in entity:
+                dataentities.append(entity)
+            else:
+                nondataentites.append(entity)
+        return dataentities, nondataentites
+
+    def add_data_entities(self, dataentities: Union[HKDataNode, List[HKDataNode]], transaction: Optional[HKTransaction]=None) -> None:
+        """ Add entities with raw data to repository.
+        
+        Parameters
+        ----------
+        entities : (Union[HKDataNode, List[HKDataNode]]) data node or list of data nodes
+        transaction : (Optional[HKTransaction]) connection transaction
+        """
+
+        url = f'{self.base._repository_uri}/{self.name}/entity/'
+
+        if not dataentities:
+            return
+
+        if not isinstance(dataentities, (list,tuple)):
+            dataentities = [dataentities]
+
+        if isinstance(dataentities[0], HKEntity):
+            dataentities = [x.to_dict() for x in entities]
+        elif isinstance(dataentities[0], dict):
+            pass
+        else:
+            raise ValueError
+
+        files = {}
+        data = {}
+        for entity in dataentities:
+            file = entity.pop('raw_data')
+            files[entity['id']] = (entity['id'], file, entity['properties']['mimeType']) 
+            data[entity['id']] = json.dumps(entity)
+
+        response = requests.put(url=url, data=data, files=files)
+        response_validator(response=response)
+
+
+    def filter_entities(self, filter_: Union[str, Dict], bring_raw_data: Optional[bool]=False) -> List[HKEntity]:
         """ Get entities filtered by a css filter or json filter.
 
         Parameters
         ----------
         filter_ : (Union[str, Dict]) retrieval filter
+        bring_raw_data: Optional[bool] flag to define whether raw data should be fetched or not
 
         Returns
         -------
@@ -135,15 +205,20 @@ class HKRepository(object):
         except Exception as err:
             raise HKBError(message='Could not retrieve the entities.', error=err)
 
-        return [hkfy(entity) for entity in data.values()]
+        entities = [hkfy(entity) for entity in data.values()]
+        if bring_raw_data:
+            entities = self.retrieve_raw_data_from_data_entities(entities)
 
-    def get_entities(self, ids: List[Union[str, Dict]]) -> List[HKEntity]:
+        return entities
+
+    def get_entities(self, ids: List[Union[str, Dict]], bring_raw_data: Optional[bool]=False) -> List[HKEntity]:
         """ Get entities by an array of ids, where the id can be a string or an object containing remote information of
          virtual entities.
 
         Parameters
         ----------
         ids : List[Union[str, Dict]] entities identifiers
+        bring_raw_data: Optional[bool] flag to define whether raw data should be fetched or not
 
         Returns
         -------
@@ -163,7 +238,32 @@ class HKRepository(object):
         except Exception as err:
             raise HKBError(message='Could not retrieve the entities.', error=err)
 
-        return [hkfy(entity) for entity in data.values()]
+        entities = [hkfy(entity) for entity in data.values()]
+        if bring_raw_data:
+            entities = self.retrieve_raw_data_from_data_entities(entities)
+
+        return entities
+
+    def retrieve_raw_data_from_data_entities(self, entities: List[HKEntity]) -> List[HKEntity]:
+        """ Retrive data from storage from data entities 
+
+        Obs.: This is probably temporary. Probably the data will come from hkbase directly
+
+        Parameters
+        ----------
+        ids : List[HKEntity] entities
+
+        Returns
+        -------
+        (List[HKEntity]) list of data entities filled with their raw data
+        """
+
+        for i in range(len(entities)):
+            if 'mimeType' in entities[i].properties:
+                raw_data = self.get_object(entities[i].id_)
+                entities[i] = HKDataNode(raw_data, id_=entities[i].id_, parent=entities[i].parent, properties=entities[i].properties, metaproperties=entities[i].metaproperties)
+                
+        return entities
 
     def delete_entities(self, ids: Optional[Union[str, List[str], HKEntity, List[HKEntity]]] = None, transaction: Optional[HKTransaction]=None) -> None:
         """ Delete entities from the repository using their ids.
@@ -175,15 +275,12 @@ class HKRepository(object):
 
         url = f'{self.base._repository_uri}/{self.name}/entity/'
 
-        if ids is None or len(ids) == 0:
-            ids = {}
-        else:
-            if not isinstance(ids, (list,tuple)):
-                ids = [ids]
-
-            if isinstance(ids[0], HKEntity):
-                ids = [x.id_ for x in ids]
-
+        if not isinstance(ids, (list,tuple)):
+            ids = [ids]
+        
+        if isinstance(ids[0], HKEntity):
+            ids = [x.id_ for x in ids]
+            
         response = requests.delete(url=url, data=json.dumps(ids), headers=self._headers)
         response_validator(response=response)
 
@@ -216,7 +313,9 @@ class HKRepository(object):
             raise HKpyError(message='Data formaat not supported.')
 
         if 'as_hk' in options and options['as_hk'] == True:
-            self.add_entities(entities=json.loads(fd))
+            entities = json.loads(fd)
+            entities = list(map(hkfy, entities.values()))
+            self.add_entities(list(entities))
 
         else:
             url = f'{self.base._repository_uri}/{self.name}/rdf'
@@ -323,6 +422,10 @@ class HKRepository(object):
         elif isinstance(object_, str) and os.path.isfile(object_):
             with open(object_ ,'rb') as f:
                 object_ = f.read()
+        elif isinstance(object_, str):
+            pass # do nothing
+        elif isinstance(object_, bytes):
+            pass # do nothing
         else:
             raise HKpyError(message='Object not valid.')
 
@@ -475,3 +578,36 @@ class HKRepository(object):
         if not ('results' in data and 'bindings' in data['results'] and 'head' in data):
             raise HKpyError(f'The given data is not of the expected format')
         return SPARQLResultSet(data)
+
+    def resolve_fi(self, fi: FI, raw = False) -> Union[bytes, List[HKEntity]] :
+        """
+        Resolve a full FI. Set raw to True in order to get raw output. Otherwise the function will try to
+        interpret the response (i.e. into hk objects)
+        """
+        quoted_fi = quote(fi.__str__(), safe="");
+        url = f'{self.base._repository_uri}/{self.name}/fi/{quoted_fi}'
+
+        response = requests.get(url=url, headers=self._headers)
+        _, data = response_validator(response=response, content='.')
+
+        if raw:
+            return data
+
+        # some extra response data converter
+        content_type = response.headers['Content-Type']
+        if content_type.startswith('hyperknowledge/graph'):
+            return hkfy(response.json())
+        elif content_type.startswith('hyperknowledge/node'):
+            return hkfy(response.json())
+        elif content_type.startswith('text'):
+            return response.content.decode()
+        else:
+            return data
+
+    def persist_fi(self, fi):
+
+        quoted_fi = quote(fi.__str__(), safe="");
+        url = f'{self.base._repository_uri}/{self.name}/fi/{quoted_fi}'
+
+        response = requests.put(url=url, headers=self._headers)
+        response_validator(response=response)

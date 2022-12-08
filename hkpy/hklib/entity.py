@@ -55,6 +55,9 @@ class HKEntity(object):
         else:
             self.properties.update(kwargs)
 
+    def set_property(self, property, value):
+        self.properties[property] = value
+
     def add_metaproperties(self, **kwargs) -> None:
         """ Add metaproperties in the HKEntity.
 
