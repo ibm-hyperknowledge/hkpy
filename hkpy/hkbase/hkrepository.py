@@ -10,7 +10,7 @@ import copy
 import json
 import requests
 from urllib.parse import quote
-from io import TextIOWrapper, BufferedReader, BufferedIOBase
+from io import TextIOWrapper, BufferedReader, BufferedIOBase, BytesIO
 
 from . import HKTransaction, generate_id, constants
 from ..hklib import hkfy, HKEntity, HKContext
@@ -80,7 +80,7 @@ class HKRepository(object):
 
         if not isinstance(entities, (list,tuple)):
             entities = [entities]
-        
+
         if isinstance(entities[0], HKEntity):
             entities = [x.to_dict() for x in entities]
         elif isinstance(entities[0], dict):
@@ -98,12 +98,40 @@ class HKRepository(object):
         response = requests.put(url=url, data=json.dumps(entities), headers=headers)
         response_validator(response=response)
 
+    def add_entities_bulk(self, entities: Union[HKEntity, List[HKEntity]], transaction: Optional[HKTransaction] = None) -> None:
+        """ Add entities to repository.
+
+        Parameters
+        ----------
+        entities : (Union[HKEntity, List[HKEntity]]) entity or list of entities
+        transaction : (Optional[HKTransaction]) connection transaction
+        """
+
+        url = f'{self.base._repository_uri}/{self.name}/entity/bulk'
+
+        if not isinstance(entities, (list,tuple)):
+            entities = [entities]
+
+        if isinstance(entities[0], HKEntity):
+            entities = [x.to_dict() for x in entities]
+        elif isinstance(entities[0], dict):
+            pass
+            # entities = list(map(hkfy, entities))
+        else:
+            raise ValueError
+
+        headers = copy.deepcopy(self._headers)
+        headers['Content-Type'] = 'application/octet-stream'
+
+        response = requests.put(url=url, data=BufferedReader(BytesIO(json.dumps(entities).encode())), headers=headers)
+        response_validator(response=response)
+
     def filter_data_entities(self, entities: Union[HKEntity, List[HKEntity]]):
         """ filter the entities with raw data.
         Return two lists:
             dataentities: entities with raw data.
             nondataentites: entities without raw data.
-        
+
         Parameters
         ----------
         entities : (Union[HKDataNode, List[HKDataNode]]) entity or list of entities
@@ -114,7 +142,7 @@ class HKRepository(object):
         dataentities: (List[HKEntity]) list of entities with raw data
         nondataentites: (List[HKEntity]) list of entities without raw data
         """
-        
+
         dataentities = []
         nondataentites = []
         for entity in entities:
@@ -126,7 +154,7 @@ class HKRepository(object):
 
     def add_data_entities(self, dataentities: Union[HKDataNode, List[HKDataNode]], transaction: Optional[HKTransaction]=None) -> None:
         """ Add entities with raw data to repository.
-        
+
         Parameters
         ----------
         entities : (Union[HKDataNode, List[HKDataNode]]) data node or list of data nodes
@@ -152,7 +180,7 @@ class HKRepository(object):
         data = {}
         for entity in dataentities:
             file = entity.pop('raw_data')
-            files[entity['id']] = (entity['id'], file, entity['properties']['mimeType']) 
+            files[entity['id']] = (entity['id'], file, entity['properties']['mimeType'])
             data[entity['id']] = json.dumps(entity)
 
         response = requests.put(url=url, data=data, files=files)
@@ -245,7 +273,7 @@ class HKRepository(object):
         return entities
 
     def retrieve_raw_data_from_data_entities(self, entities: List[HKEntity]) -> List[HKEntity]:
-        """ Retrive data from storage from data entities 
+        """ Retrive data from storage from data entities
 
         Obs.: This is probably temporary. Probably the data will come from hkbase directly
 
@@ -262,7 +290,7 @@ class HKRepository(object):
             if 'mimeType' in entities[i].properties:
                 raw_data = self.get_object(entities[i].id_)
                 entities[i] = HKDataNode(raw_data, id_=entities[i].id_, parent=entities[i].parent, properties=entities[i].properties, metaproperties=entities[i].metaproperties)
-                
+
         return entities
 
     def delete_entities(self, ids: Optional[Union[str, List[str], HKEntity, List[HKEntity]]] = None, transaction: Optional[HKTransaction]=None) -> None:
@@ -277,10 +305,10 @@ class HKRepository(object):
 
         if not isinstance(ids, (list,tuple)):
             ids = [ids]
-        
+
         if isinstance(ids[0], HKEntity):
             ids = [x.id_ for x in ids]
-            
+
         response = requests.delete(url=url, data=json.dumps(ids), headers=self._headers)
         response_validator(response=response)
 
