@@ -144,7 +144,8 @@ class HKReferenceNode(HKAnyNode):
 
 
 class HKDataNode(HKAnyNode):  
-    """ 
+    """
+    A HKDataNode is a HKNode that carries media information, together with it mimetype. It is akin to a general Content Node.
     """
 
     def __init__(self, raw_data: any, mimeType: Optional[str]=None, id_: Optional[str]=None, parent: Optional[Union[str, HKContext]]=None, 
