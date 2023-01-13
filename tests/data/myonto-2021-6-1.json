@@ -1,0 +1,94 @@
+{
+  "subConceptOf": {
+    "id": "subConceptOf",
+    "className": "h",
+    "roles": {
+      "subject": "s",
+      "object": "o"
+    },
+    "type": "connector"
+  },
+  "partOf": {
+    "id": "partOf",
+    "className": "f",
+    "roles": {
+      "subject": "s",
+      "object": "o"
+    },
+    "type": "connector"
+  },
+  "ab0a6f00-dd97-11eb-b266-4fa3dd7cd478": {
+    "id": "ab0a6f00-dd97-11eb-b266-4fa3dd7cd478",
+    "connector": "subConceptOf",
+    "parent": null,
+    "binds": {
+      "subject": {
+        "Cat": [
+          "λ"
+        ]
+      },
+      "object": {
+        "Animal": [
+          "λ"
+        ]
+      }
+    },
+    "type": "link"
+  },
+  "b3508190-dd97-11eb-b266-4fa3dd7cd478": {
+    "id": "b3508190-dd97-11eb-b266-4fa3dd7cd478",
+    "connector": "subConceptOf",
+    "parent": null,
+    "binds": {
+      "subject": {
+        "Dog": [
+          "λ"
+        ]
+      },
+      "object": {
+        "Animal": [
+          "λ"
+        ]
+      }
+    },
+    "type": "link"
+  },
+  "04f64cf0-dd98-11eb-b266-4fa3dd7cd478": {
+    "id": "04f64cf0-dd98-11eb-b266-4fa3dd7cd478",
+    "connector": "partOf",
+    "parent": null,
+    "binds": {
+      "subject": {
+        "CatEye": [
+          "λ"
+        ]
+      },
+      "object": {
+        "Cat": [
+          "λ"
+        ]
+      }
+    },
+    "type": "link"
+  },
+  "Animal": {
+    "id": "Animal",
+    "parent": null,
+    "type": "node"
+  },
+  "Cat": {
+    "id": "Cat",
+    "parent": null,
+    "type": "node"
+  },
+  "Dog": {
+    "id": "Dog",
+    "parent": null,
+    "type": "node"
+  },
+  "CatEye": {
+    "id": "CatEye",
+    "parent": null,
+    "type": "node"
+  }
+}

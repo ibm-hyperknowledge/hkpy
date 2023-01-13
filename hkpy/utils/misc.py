@@ -5,6 +5,8 @@
 
 import json, io, os, time
 
+from requests import Response
+
 from ..oops import HKBError
 from .constants import DEBUG_MODE
 
@@ -13,7 +15,7 @@ __all__ = ['response_validator', 'generate_id']
 def generate_id(entity):
     return str(hex(int(time.time() * id(entity))))
 
-def response_validator(response, whitelist=None, content='json'):
+def response_validator(response : Response, whitelist=None, content='json'):
     """
     """
     

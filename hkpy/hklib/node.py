@@ -4,8 +4,11 @@
 ###
 
 from typing import Optional, Union, List, Dict
+from io import TextIOWrapper, BufferedReader, BufferedIOBase, BytesIO
 
+import os
 import datetime
+import mimetypes
 
 from hkpy.hklib.entity import HKParentedEntity
 from . import HKEntity
@@ -14,7 +17,7 @@ from . import HKConnector
 from . import HKLink
 from . import HKAnchor
 
-__all__ = ['HKContext', 'HKNode', 'HKReferenceNode', 'HKTrail', 'HKAnyNode']
+__all__ = ['HKContext', 'HKNode', 'HKReferenceNode', 'HKTrail', 'HKAnyNode', 'HKDataNode']
 
 class HKAnyNode(HKParentedEntity):
     def __init__(self, type_, id_, parent, properties, metaproperties):
@@ -137,6 +140,67 @@ class HKReferenceNode(HKAnyNode):
 
         jobj['ref'] = self.ref
 
+        return jobj
+
+
+class HKDataNode(HKAnyNode):  
+    """
+    A HKDataNode is a HKNode that carries media information, together with it mimetype. It is akin to a general Content Node.
+    """
+
+    def __init__(self, raw_data: any, mimeType: Optional[str]=None, id_: Optional[str]=None, parent: Optional[Union[str, HKContext]]=None, 
+                 properties: Optional[Dict]=None, metaproperties: Optional[Dict]=None):
+        """ Initialize an instance of HKDataNode class.
+    
+        Parameters
+        ----------
+        raw_data: (Optional[Union[str, HKEntity]]) The data which this entities represents
+        mimeType: Optional[str]: String specifying the data type.
+        id_: (Optional[str]) the reference node's unique id
+        parent: (Optional[Union[str, HKContext]]) the context in which the reference node is setted
+        properties: (Optional[Dict]) any reference node's property and its value
+        metaproperties: (Optional[Dict]) the type of any property
+        """  
+
+        if isinstance(raw_data, (TextIOWrapper, BufferedReader, BufferedIOBase)):
+            filename = os.path.basename(raw_data.name)
+            raw_data = raw_data.buffer.read()
+        elif isinstance(raw_data, str) and os.path.isfile(raw_data):
+            filename = os.path.basename(raw_data)
+            raw_data = open(filename,'rb').read()
+        elif isinstance(raw_data, bytes): 
+            if not id_:
+                raise HKpyError(message='You should provide a node id.')
+            filename = id_
+
+        if not id_:
+            id_ = filename
+
+        if not properties:
+            properties = {}
+
+        if mimeType:
+            properties['mimeType'] = mimeType
+        else:
+            if 'mimeType' in properties:
+                mimeType = properties['mimeType']
+            else:
+                mimeType = mimetypes.guess_type(filename)[0]
+                properties['mimeType'] = mimeType
+
+        super().__init__(type_=constants.HKType.NODE, id_=id_, parent=parent, properties=properties, metaproperties=metaproperties)
+        self.raw_data = raw_data
+
+    def to_dict(self) -> Dict:
+        """ Convert a HKDataNode to a dict.
+        
+        Returns
+        -------
+        (Dict) The HKDataNode's correspondent dict
+        """
+        jobj = super().to_dict()
+        
+        jobj['raw_data'] = self.raw_data
         return jobj
 
 class HKTrail(HKAnyNode):

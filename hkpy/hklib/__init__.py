@@ -11,7 +11,8 @@ from .anchor import HKAnchor
 from .entity import HKEntity
 from .connector import HKConnector
 from .link import HKLink
-from .node import HKNode, HKContext, HKReferenceNode, HKTrail, HKAnyNode
+from .node import HKNode, HKContext, HKReferenceNode, HKTrail, HKAnyNode, HKDataNode
+from .graphbuilder import HKGraphBuilder
 
 def hkfy(entity: Union[str, Dict]) -> HKEntity:
     """ Convert an entity in string or dict format to a HKEntity object.
@@ -43,7 +44,7 @@ def hkfy(entity: Union[str, Dict]) -> HKEntity:
                 hke = HKNode(id_=entity['id'], parent=entity.get('parent'))
             elif entity['type'] == constants.HKType.REFERENCENODE:
                 ref = entity['ref'] if 'ref' in entity else None
-                hke = HKReferenceNode(id_=entity['id'], ref=ref, parent=entity.get('parent'))       
+                hke = HKReferenceNode(id_=entity['id'], ref=ref, parent=entity.get('parent'))
             if 'interfaces' in entity:
                 hke.interfaces = entity['interfaces']
 
@@ -52,6 +53,14 @@ def hkfy(entity: Union[str, Dict]) -> HKEntity:
 
         elif entity['type'] == constants.HKType.ANCHOR:
             raise NotImplementedError
+        elif entity['type'] == constants.HKType.GRAPH:
+            hke = HKGraph()
+            entities = []
+            for entity_type, graph_entity in entity.items():
+                if entity_type != 'type':
+                    for eid, e in graph_entity.items():
+                        entities.append(hkfy(e))
+            hke.add_entities(entities)
         
         if 'properties' in entity:
             hke.add_properties(properties=entity['properties'])

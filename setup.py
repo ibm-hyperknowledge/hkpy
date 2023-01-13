@@ -38,7 +38,8 @@ REQUIRED = [
     'urllib3',
     'idna',
     'chardet',
-    'certifi'
+    'certifi',
+    'lark'
 ]
 
 try:
