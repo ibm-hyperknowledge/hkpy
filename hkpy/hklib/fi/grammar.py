@@ -1,3 +1,8 @@
+###
+# Copyright (c) 2022-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 FI_GRAMMAR = r"""
 start               : fijs
 fijs				: id (_DOT_OP anchor)*
