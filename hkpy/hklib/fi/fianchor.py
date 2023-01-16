@@ -1,3 +1,8 @@
+###
+# Copyright (c) 2022-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 from collections import OrderedDict
 
 from hkpy.hklib.fi.fioperator import FIOperator

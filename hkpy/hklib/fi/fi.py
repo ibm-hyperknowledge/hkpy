@@ -1,3 +1,8 @@
+###
+# Copyright (c) 2022-present, IBM Research
+# Licensed under The MIT License [see LICENSE for details]
+###
+
 import re
 from typing import Optional, Union
 
