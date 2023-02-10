@@ -2,7 +2,7 @@
 # Copyright (c) 2019-present, IBM Research
 # Licensed under The MIT License [see LICENSE for details]
 ###
-
+import urllib
 from typing import TypeVar, List, Dict, Union, Optional, Any, cast
 
 import os
@@ -443,7 +443,7 @@ class HKRepository(object):
         url = f'{self.base._repository_uri}/{self.name}/storage/object'
 
         if id_ is not None:
-            url = f'{url}/{id_}'
+            url = f'{url}/{urllib.parse.quote_plus(id_)}'
 
         if isinstance(object_, (TextIOWrapper, BufferedReader, BufferedIOBase)):
             object_ = object_.read()
@@ -469,7 +469,7 @@ class HKRepository(object):
         """
         """
 
-        url = f'{self.base._repository_uri}/{self.name}/storage/object/{id_}'
+        url = f'{self.base._repository_uri}/{self.name}/storage/object/{urllib.parse.quote_plus(id_)}'
 
         response = requests.delete(url=url, headers=self._headers)
         response_validator(response=response)
@@ -478,7 +478,7 @@ class HKRepository(object):
         """
         """
 
-        url = f'{self.base._repository_uri}/{self.name}/storage/object/{id_}'
+        url = f'{self.base._repository_uri}/{self.name}/storage/object/{urllib.parse.quote_plus(id_)}'
 
         response = requests.get(url=url, headers=self._headers)
         _, data = response_validator(response=response, content='.')
