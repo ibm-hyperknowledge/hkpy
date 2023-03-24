@@ -2,8 +2,8 @@
 # Copyright (c) 2019-present, IBM Research
 # Licensed under The MIT License [see LICENSE for details]
 ###
-
-from typing import TypeVar, List, Dict, Union, Optional, Any, cast
+import urllib
+from typing import TypeVar, List, Dict, Union, Optional, Any, cast, Tuple
 
 import os
 import copy
@@ -443,7 +443,7 @@ class HKRepository(object):
         url = f'{self.base._repository_uri}/{self.name}/storage/object'
 
         if id_ is not None:
-            url = f'{url}/{id_}'
+            url = f'{url}/{urllib.parse.quote_plus(id_)}'
 
         if isinstance(object_, (TextIOWrapper, BufferedReader, BufferedIOBase)):
             object_ = object_.read()
@@ -469,7 +469,7 @@ class HKRepository(object):
         """
         """
 
-        url = f'{self.base._repository_uri}/{self.name}/storage/object/{id_}'
+        url = f'{self.base._repository_uri}/{self.name}/storage/object/{urllib.parse.quote_plus(id_)}'
 
         response = requests.delete(url=url, headers=self._headers)
         response_validator(response=response)
@@ -478,7 +478,7 @@ class HKRepository(object):
         """
         """
 
-        url = f'{self.base._repository_uri}/{self.name}/storage/object/{id_}'
+        url = f'{self.base._repository_uri}/{self.name}/storage/object/{urllib.parse.quote_plus(id_)}'
 
         response = requests.get(url=url, headers=self._headers)
         _, data = response_validator(response=response, content='.')
@@ -607,7 +607,7 @@ class HKRepository(object):
             raise HKpyError(f'The given data is not of the expected format')
         return SPARQLResultSet(data)
 
-    def resolve_fi(self, fi: FI, raw = False) -> Union[bytes, List[HKEntity]] :
+    def resolve_fi(self, fi: FI, raw: bool = False, output_mimetype: bool = False) -> Union[HKEntity, Tuple[Any, str]]:
         """
         Resolve a full FI. Set raw to True in order to get raw output. Otherwise the function will try to
         interpret the response (i.e. into hk objects)
@@ -618,11 +618,14 @@ class HKRepository(object):
         response = requests.get(url=url, headers=self._headers)
         _, data = response_validator(response=response, content='.')
 
+        content_type = response.headers['Content-Type']
         if raw:
-            return data
+            if output_mimetype:
+                return data, content_type
+            else:
+                return data
 
         # some extra response data converter
-        content_type = response.headers['Content-Type']
         if content_type.startswith('hyperknowledge/graph'):
             return hkfy(response.json())
         elif content_type.startswith('hyperknowledge/node'):
