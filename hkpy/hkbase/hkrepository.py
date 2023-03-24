@@ -3,7 +3,7 @@
 # Licensed under The MIT License [see LICENSE for details]
 ###
 import urllib
-from typing import TypeVar, List, Dict, Union, Optional, Any, cast
+from typing import TypeVar, List, Dict, Union, Optional, Any, cast, Tuple
 
 import os
 import copy
@@ -607,7 +607,7 @@ class HKRepository(object):
             raise HKpyError(f'The given data is not of the expected format')
         return SPARQLResultSet(data)
 
-    def resolve_fi(self, fi: FI, raw = False) -> Union[bytes, List[HKEntity]] :
+    def resolve_fi(self, fi: FI, raw: bool = False, output_mimetype: bool = False) -> Union[HKEntity, Tuple[Any, str]]:
         """
         Resolve a full FI. Set raw to True in order to get raw output. Otherwise the function will try to
         interpret the response (i.e. into hk objects)
@@ -618,11 +618,14 @@ class HKRepository(object):
         response = requests.get(url=url, headers=self._headers)
         _, data = response_validator(response=response, content='.')
 
+        content_type = response.headers['Content-Type']
         if raw:
-            return data
+            if output_mimetype:
+                return data, content_type
+            else:
+                return data
 
         # some extra response data converter
-        content_type = response.headers['Content-Type']
         if content_type.startswith('hyperknowledge/graph'):
             return hkfy(response.json())
         elif content_type.startswith('hyperknowledge/node'):
