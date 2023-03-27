@@ -90,7 +90,7 @@ def processJsonPlus(ast):
         if ast.type == 'NULL': return None
         if ast.type == 'TRUE': return True
         if ast.type == 'NUMBER': return astlib.literal_eval(ast)
-        if ast.type == 'STRING': return ast
+        if ast.type == 'STRING': return astlib.literal_eval(ast)
     else:
         if ast.data == 'fijs': return processFijs(ast)
         if ast.data == 'object': return processObject(ast)
