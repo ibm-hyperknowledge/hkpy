@@ -8,6 +8,8 @@ import os
 import setuptools
 from setuptools import setup, find_packages
 
+from .version import _version
+
 
 def find_recursive_packages(root):
     def _isdir(f):
@@ -21,7 +23,7 @@ def find_recursive_packages(root):
 
 
 NAME = 'hkpy'
-VERSION = '2.8.0'
+VERSION = _version
 URL = 'https://github.com/ibm-hyperknowledge/hkpy'
 DESCRIPTION = 'A Python module to create software abstraction for accessing hyperknowledge graphs'
 LONG_DESCRIPTION = None
