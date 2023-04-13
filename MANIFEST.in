@@ -1,2 +1,2 @@
 global-include py.typed
-include version.txt
+include ./version.txt
