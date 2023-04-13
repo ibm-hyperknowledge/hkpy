@@ -21,7 +21,7 @@ def find_recursive_packages(root):
 
 
 NAME = 'hkpy'
-VERSION = open('version.txt', 'r').read().strip()
+VERSION = open('./version.txt', 'r').read().strip()
 URL = 'https://github.com/ibm-hyperknowledge/hkpy'
 DESCRIPTION = 'A Python module to create software abstraction for accessing hyperknowledge graphs'
 LONG_DESCRIPTION = None
