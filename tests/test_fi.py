@@ -53,3 +53,6 @@ fi = FI('mypicture.rect({x: 20, y: 20, w: 800, h: 20}).rect({x: 2, y: 4, w: 10, 
 data = repo.resolve_fi(fi)
 repo.persist_fi(fi)
 
+
+# Test parse
+fi = FI('file.func(["A", "B"])')

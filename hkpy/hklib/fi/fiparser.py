@@ -90,7 +90,7 @@ def processJsonPlus(ast):
         if ast.type == 'NULL': return None
         if ast.type == 'TRUE': return True
         if ast.type == 'NUMBER': return astlib.literal_eval(ast)
-        if ast.type == 'STRING': return ast
+        if ast.type == 'STRING': return astlib.literal_eval(ast)
     else:
         if ast.data == 'fijs': return processFijs(ast)
         if ast.data == 'object': return processObject(ast)
@@ -98,7 +98,14 @@ def processJsonPlus(ast):
 
 
 def processArray(ast):
-    raise Exception('Not supported!')
+    array = []
+    if len(ast.children) > 0:
+        members = ast.children
+        for member in members:
+            element = processJsonPlus(member)
+            array.append(element)
+    return array
+
 
 def processObject(ast):
     object = {}

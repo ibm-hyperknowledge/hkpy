@@ -38,6 +38,15 @@ class FIAnchor:
                     args.append(f"""{param}: {value}""")
                 strArguments = ','.join(args)
                 strAnchor = f"""{strAnchor}({{{strArguments}}})"""
+            elif isinstance(self.token, list) and len(self.token) > 0:
+                elements = []
+                for value in self.token:
+                    if isinstance(value, str):
+                        elements.append(f'''"{value}"''')
+                    else:
+                        elements.append(f'''{value}''')
+                str_elements = ','.join(elements)
+                strAnchor = f"""{strAnchor}([{str_elements}])"""
             else:
                 strAnchor = f"""{strAnchor}({self.token.__str__()})"""
 
