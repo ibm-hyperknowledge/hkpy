@@ -547,7 +547,7 @@ class HKRepository(object):
 
         return HKStoredQuery.from_dict(data)
 
-    def run_stored_query(self, query_id: str, parameters: Optional[List[str]] = None,
+    def run_stored_query(self, query_id: str, parameters: Optional[Dict[str, Union[str, float, int]]] = None,
                          run_options: Optional[Dict] = None, transaction_id: Optional[str] = None,
                          mime_type: Optional[str] = None, proxy: Optional[bool] = False) -> Union[HKEntityResultSet,
                                                                                                   SPARQLResultSet]:
