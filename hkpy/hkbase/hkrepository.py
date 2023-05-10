@@ -447,10 +447,22 @@ class HKRepository(object):
             url = f'{url}/{urllib.parse.quote_plus(id_)}'
 
         if isinstance(object_, (TextIOWrapper, BufferedReader, BufferedIOBase)):
-            object_ = object_.read()
+            def generator_from_reader(o, chunk_size=1024):
+                while True:
+                    chunk = o.read(chunk_size)
+                    if not chunk:
+                        break
+                    yield chunk
+            object_ = generator_from_reader(object_)
         elif isinstance(object_, str) and os.path.isfile(object_):
-            with open(object_ ,'rb') as f:
-                object_ = f.read()
+            def generator_from_file(o, chunk_size=1024): 
+                with open(object_, 'rb') as f:
+                    chunk = f.read(chunk_size)
+                    while True:
+                        if not chunk:
+                            break
+                        yield chunk
+            object_ = generator_from_file(object_)
         elif isinstance(object_, str):
             pass # do nothing
         elif isinstance(object_, bytes):
