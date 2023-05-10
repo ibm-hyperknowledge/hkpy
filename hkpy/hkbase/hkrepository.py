@@ -487,14 +487,17 @@ class HKRepository(object):
         response = requests.delete(url=url, headers=self._headers)
         response_validator(response=response)
 
-    def get_object(self, id_: str) -> bytes:
+    def get_object(self, id_: str, raw: Optional[bool] = False) -> Union[bytes, HTTPResponse]:
         """
         """
-
+        # TODO: stream response
         url = f'{self.base._repository_uri}/{self.name}/storage/object/{urllib.parse.quote_plus(id_)}'
 
-        response = requests.get(url=url, headers=self._headers)
-        _, data = response_validator(response=response, content='.')
+        response = requests.get(url=url, headers=self._headers, stream=raw)
+        if raw: 
+            _, data = response_validator(response=response, content='raw')
+        else: 
+            _, data = response_validator(response=response, content='.')
 
         return data
 
