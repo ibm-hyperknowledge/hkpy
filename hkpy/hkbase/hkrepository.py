@@ -11,6 +11,7 @@ import json
 import requests
 from urllib.parse import quote
 from io import TextIOWrapper, BufferedReader, BufferedIOBase, BytesIO
+from urllib3.response import HTTPResponse
 
 from . import HKTransaction, generate_id, constants
 from ..hklib import hkfy, HKEntity, HKContext
@@ -446,10 +447,22 @@ class HKRepository(object):
             url = f'{url}/{urllib.parse.quote_plus(id_)}'
 
         if isinstance(object_, (TextIOWrapper, BufferedReader, BufferedIOBase)):
-            object_ = object_.read()
+            def generator_from_reader(o, chunk_size=1024):
+                while True:
+                    chunk = o.read(chunk_size)
+                    if not chunk:
+                        break
+                    yield chunk
+            object_ = generator_from_reader(object_)
         elif isinstance(object_, str) and os.path.isfile(object_):
-            with open(object_ ,'rb') as f:
-                object_ = f.read()
+            def generator_from_file(o, chunk_size=1024): 
+                with open(object_, 'rb') as f:
+                    chunk = f.read(chunk_size)
+                    while True:
+                        if not chunk:
+                            break
+                        yield chunk
+            object_ = generator_from_file(object_)
         elif isinstance(object_, str):
             pass # do nothing
         elif isinstance(object_, bytes):
@@ -607,7 +620,7 @@ class HKRepository(object):
             raise HKpyError(f'The given data is not of the expected format')
         return SPARQLResultSet(data)
 
-    def resolve_fi(self, fi: FI, raw: bool = False, output_mimetype: bool = False) -> Union[HKEntity, Tuple[Any, str]]:
+    def resolve_fi(self, fi: FI, raw: bool = False, output_mimetype: bool = False) -> Union[HKEntity, Tuple[Any, str], HTTPResponse]:
         """
         Resolve a full FI. Set raw to True in order to get raw output. Otherwise the function will try to
         interpret the response (i.e. into hk objects)
@@ -615,8 +628,11 @@ class HKRepository(object):
         quoted_fi = quote(fi.__str__(), safe="");
         url = f'{self.base._repository_uri}/{self.name}/fi/{quoted_fi}'
 
-        response = requests.get(url=url, headers=self._headers)
-        _, data = response_validator(response=response, content='.')
+        response = requests.get(url=url, headers=self._headers, stream=raw)
+        if raw:
+            _, data = response_validator(response=response, content='raw')
+        else:
+            _, data = response_validator(response=response, content='.')
 
         content_type = response.headers['Content-Type']
         if raw:
