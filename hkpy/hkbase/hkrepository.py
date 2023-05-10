@@ -490,7 +490,6 @@ class HKRepository(object):
     def get_object(self, id_: str, raw: Optional[bool] = False) -> Union[bytes, HTTPResponse]:
         """
         """
-        # TODO: stream response
         url = f'{self.base._repository_uri}/{self.name}/storage/object/{urllib.parse.quote_plus(id_)}'
 
         response = requests.get(url=url, headers=self._headers, stream=raw)
