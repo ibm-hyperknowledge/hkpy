@@ -78,8 +78,10 @@ class HKRepository(object):
 
         url = f'{self.base._repository_uri}/{self.name}/entity/'
 
+        parameters = {}
+
         if force_add:
-            url = f'{url}?forceAdd=true'
+            parameters['forceAdd'] = 'true'
 
         filtered_data_objects = []
 
@@ -100,7 +102,7 @@ class HKRepository(object):
         headers = copy.deepcopy(self._headers)
         headers['Content-Type'] = 'application/json'
 
-        response = requests.put(url=url, data=json.dumps(entities), headers=headers)
+        response = requests.put(url=url, data=json.dumps(entities), headers=headers, params=parameters)
         response_validator(response=response)
 
     def add_entities_bulk(self, entities: Union[HKEntity, List[HKEntity]], transaction: Optional[HKTransaction] = None, force_add: Optional[bool] = False) -> None:
@@ -115,8 +117,9 @@ class HKRepository(object):
 
         url = f'{self.base._repository_uri}/{self.name}/entity/bulk'
 
+        parameters = {}
         if force_add:
-            url = f'{url}?forceAdd=true'
+            parameters['forceAdd'] = 'true'
 
         if not isinstance(entities, (list,tuple)):
             entities = [entities]
@@ -132,7 +135,7 @@ class HKRepository(object):
         headers = copy.deepcopy(self._headers)
         headers['Content-Type'] = 'application/octet-stream'
 
-        response = requests.put(url=url, data=BufferedReader(BytesIO(json.dumps(entities).encode())), headers=headers)
+        response = requests.put(url=url, data=BufferedReader(BytesIO(json.dumps(entities).encode())), headers=headers, params=parameters)
         response_validator(response=response)
 
     def filter_data_entities(self, entities: Union[HKEntity, List[HKEntity]]):
