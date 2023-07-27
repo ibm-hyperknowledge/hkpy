@@ -35,7 +35,7 @@ class HKRepository(object):
 
     def __init__(self, base: HKBase, name: str):
         """ Initialize an instance of HKRepository class.
-    
+
         Parameters
         ----------
         base: (HKBase) HKBase object in which the repository is located
@@ -51,11 +51,11 @@ class HKRepository(object):
 
     def create_transaction(self, id_: Optional[str]=None) -> HKTransaction:
         """ Create a communication transaction with the repository.
-        
+
         Parameters
         ----------
         entities : (Optional[str]) transaction id
-        
+
         Returns
         -------
         (HKTransaction) A HKTransaction object
@@ -66,16 +66,22 @@ class HKRepository(object):
 
         return HKTransaction(id_=generate_id(self))
 
-    def add_entities(self, entities: Union[HKEntity, List[HKEntity]], transaction: Optional[HKTransaction]=None) -> None:
+    def add_entities(self, entities: Union[HKEntity, List[HKEntity]], transaction: Optional[HKTransaction] = None, force_add: Optional[bool] = False) -> None:
         """ Add entities to repository.
-        
+
         Parameters
         ----------
         entities : (Union[HKEntity, List[HKEntity]]) entity or list of entities
         transaction : (Optional[HKTransaction]) connection transaction
+        force_add: (Optional[bool] flag to bypass verification of preexisting entities and add all assuming they are new
         """
 
         url = f'{self.base._repository_uri}/{self.name}/entity/'
+
+        parameters = {}
+
+        if force_add:
+            parameters['forceAdd'] = 'true'
 
         filtered_data_objects = []
 
@@ -96,19 +102,24 @@ class HKRepository(object):
         headers = copy.deepcopy(self._headers)
         headers['Content-Type'] = 'application/json'
 
-        response = requests.put(url=url, data=json.dumps(entities), headers=headers)
+        response = requests.put(url=url, data=json.dumps(entities), headers=headers, params=parameters)
         response_validator(response=response)
 
-    def add_entities_bulk(self, entities: Union[HKEntity, List[HKEntity]], transaction: Optional[HKTransaction] = None) -> None:
+    def add_entities_bulk(self, entities: Union[HKEntity, List[HKEntity]], transaction: Optional[HKTransaction] = None, force_add: Optional[bool] = False) -> None:
         """ Add entities to repository.
 
         Parameters
         ----------
         entities : (Union[HKEntity, List[HKEntity]]) entity or list of entities
         transaction : (Optional[HKTransaction]) connection transaction
+        force_add: (Optional[bool] flag to bypass verification of preexisting entities and add all assuming they are new
         """
 
         url = f'{self.base._repository_uri}/{self.name}/entity/bulk'
+
+        parameters = {}
+        if force_add:
+            parameters['forceAdd'] = 'true'
 
         if not isinstance(entities, (list,tuple)):
             entities = [entities]
@@ -124,7 +135,7 @@ class HKRepository(object):
         headers = copy.deepcopy(self._headers)
         headers['Content-Type'] = 'application/octet-stream'
 
-        response = requests.put(url=url, data=BufferedReader(BytesIO(json.dumps(entities).encode())), headers=headers)
+        response = requests.put(url=url, data=BufferedReader(BytesIO(json.dumps(entities).encode())), headers=headers, params=parameters)
         response_validator(response=response)
 
     def filter_data_entities(self, entities: Union[HKEntity, List[HKEntity]]):
@@ -315,7 +326,7 @@ class HKRepository(object):
 
     def update_entities(self, entities: Union[HKEntity, List[HKEntity]], transaction: Optional[HKTransaction]=None) -> None:
         """ Update entities in the repository.
-        
+
         Parameters
         ----------
         entities : (Union[HKEntity, List[HKEntity]]) entity or list of entities
@@ -455,7 +466,7 @@ class HKRepository(object):
                     yield chunk
             object_ = generator_from_reader(object_)
         elif isinstance(object_, str) and os.path.isfile(object_):
-            def generator_from_file(o, chunk_size=1024): 
+            def generator_from_file(o, chunk_size=1024):
                 with open(object_, 'rb') as f:
                     chunk = f.read(chunk_size)
                     while True:
@@ -493,9 +504,9 @@ class HKRepository(object):
         url = f'{self.base._repository_uri}/{self.name}/storage/object/{urllib.parse.quote_plus(id_)}'
 
         response = requests.get(url=url, headers=self._headers, stream=raw)
-        if raw: 
+        if raw:
             _, data = response_validator(response=response, content='raw')
-        else: 
+        else:
             _, data = response_validator(response=response, content='.')
 
         return data
