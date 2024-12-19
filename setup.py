@@ -37,7 +37,6 @@ REQUIRED = [
     'PyJWT',
     'urllib3',
     'idna',
-    'chardet',
     'certifi',
     'lark'
 ]
